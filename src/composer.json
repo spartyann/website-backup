@@ -1,0 +1,25 @@
+{
+    "name": "spartyann/website_backup",
+    "type": "project",
+    "require": {
+        "symfony/var-dumper": "^5.4",
+        "aws/aws-sdk-php": "^3.208",
+        "ifsnop/mysqldump-php": "^2.9"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Yann Tassy",
+            "email": "tassy.yann@gmail.com"
+        }
+    ],
+	"autoload": {
+        "psr-4": {
+            "App\\": "App/",
+            "Config\\": "Config/"
+        },
+        "classmap": [
+
+        ]
+    }
+}
