@@ -21,20 +21,22 @@ class Config____Sample
 	public const DB_USER = 'mydb';
 	public const DB_PWD = 'yuj4f6ghj514d6fj516gh51sdgh';
 	public const DB_DATABASE = 'mydb';
+	public const DB_DUMP_SETTINGS = []; // Dump Settings for Ifsnop\Mysqldump\Mysqldump
 
 	// Files
 	public const FILES_ENABLED = true;
-	public static function filesDir() { return dirname(dirname(__DIR__)) . '/my_website'; } 
-
+	public static function filesDirs() { return [
+		dirname(dirname(__DIR__)) . '/tests/site_test'
+	]; } // Do NOT put / at the end 
 	//
 	// Backup options
 	//
 
 	// Backup
-	public const COMPRESSION_TYPE = 'tar'; // zip, tar, phpzip   => Use "tar" to preserve permissions and owner files
+	public const COMPRESSION_TYPE = 'tar'; // tar, phpzip   => Use "tar" to preserve permissions and owner files
 	
 	// Local Storage
-	public static function localStorageBackupDir() { return dirname(dirname(__DIR__)) . '/backups'; } 
+	public static function localStorageBackupDir() { return dirname(dirname(__DIR__)) . '/backups'; } // Do NOT put / at the end
 	public const LOCAL_BACKUP_RETENTION = 'P1M'; // Put null to disable automatic deletion
 
 	// S3
@@ -44,10 +46,13 @@ class Config____Sample
 	public const S3_ACCESS_KEY_ID = '';
 	public const S3_SECRET_ACCESS_KEY = '';
 	public const S3_BUCKET = 'my-bucket';
+	public const S3_DIR = 'dir';
 	public const S3_BACKUP_RETENTION = 'P1M'; // Put null to disable automatic deletion
 
 	// Notifications
-	public const DISCORD_WEBHOOK_URL = null;
+	public const NOTIF_DISCORD_USERNAME = 'Cron job';
+	public const NOTIF_DISCORD_WEBHOOK_URL = null;
+	public const NOTIF_ERROR_DISCORD_WEBHOOK_URL = null;
 
 }
 

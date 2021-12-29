@@ -25,12 +25,12 @@ class DiscordHelper
 		return $string;
 	}
 
-	public static function sendMessage(string $title, string $msg, string $colorHex = null)
+	public static function sendMessage(string $title, string $msg, string $colorHex = null, string $hookUrl = null)
 	{
 		// Truncate to 2000
 
 		$json_data = json_encode([
-				"username"=> "Shiva",
+				"username"=> Config::NOTIF_DISCORD_USERNAME,
 				"content"=> '',
 				"embeds"=> [
 				[
@@ -41,7 +41,7 @@ class DiscordHelper
 			]
 		]);
 	
-		$ch = curl_init( Config::DISCORD_WEBHOOK_URL );
+		$ch = curl_init( $hookUrl == null ? Config::NOTIF_DISCORD_WEBHOOK_URL : $hookUrl );
 		curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 		curl_setopt( $ch, CURLOPT_POST, 1);
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
