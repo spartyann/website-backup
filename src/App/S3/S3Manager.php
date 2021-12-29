@@ -47,7 +47,8 @@ class S3Manager
 		{
 			$res = $s3Client->listObjectsV2([
 				'Bucket' => Config::S3_BUCKET,
-				'StartAfter' => $lastKey
+				'StartAfter' => $lastKey,
+				'Prefix' => FileTools::cleanAndCompleteDirPath(Config::S3_DIR)
 			]);
 
 			$contents = $res->get('Contents');
@@ -98,6 +99,16 @@ class S3Manager
 			'Bucket' => Config::S3_BUCKET,
 			'Key' => $key,
 			'SourceFile' => $file
+		]);
+	}
+
+	public static function delete(string $key)
+	{
+		$s3Client = self::getS3Client();
+
+		$s3Client->deleteObject([
+			'Bucket' => Config::S3_BUCKET,
+			'Key' => $key
 		]);
 	}
 
