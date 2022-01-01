@@ -4,8 +4,10 @@ namespace App;
 
 use App\Notifications\DiscordHelper;
 use App\S3\S3Manager;
+use App\Tools\CommandTools;
 use App\Tools\FileTools;
 use Config\Config;
+use Exception;
 use Ifsnop\Mysqldump\Mysqldump;
 
 class Backup 
@@ -35,7 +37,7 @@ class Backup
 			if (Config::DB_ENABLED)
 			{
 				$dumpFile = $tmpDir . '/dump.sql';
-				self::dumpDb($dumpFile);
+				self::dumpDb($dumpFile, $notifMessage);
 			}
 		
 			// Compress with Files
@@ -169,17 +171,69 @@ class Backup
 	}
 
 
-	public static function dumpDb($dumpFile)
+	public static function dumpDb($dumpFile, string &$notifMessage)
 	{
 		$mysqlHost = Config::DB_HOST;
 		$mysqlPort = Config::DB_PORT;
 		$mysqlDbname = Config::DB_DATABASE;
 		$mysqlUser = Config::DB_USER;
 		$mysqlPwd = Config::DB_PWD;
-		$dumpSettings = Config::DB_DUMP_SETTINGS;
 
-		$dump = new Mysqldump("mysql:host=$mysqlHost:$mysqlPort;dbname=$mysqlDbname", $mysqlUser, $mysqlPwd, $dumpSettings);
-		$dump->start($dumpFile);
+		if (Config::DB_USE_MYSQLDUMP_CMD)
+		{
+			// mysqldump --routines --add-drop-table --user="$MARIADB_USER" --host="$MARIADB_HOST" --password="$MARIADB_PASSWORD" "$MARIADB_DB" --result-file="$MARIADB_FILE"
+			// --add-drop-trigger
+			// mysql --user="$MARIADB_USER" --host="$MARIADB_HOST" --password="$MARIADB_PASSWORD" "$MARIADB_DB" < "$MARIADB_FILE"
+
+			$cmdOptions = [
+				'routines' => true,
+				'add-drop-table' => true,
+				'host' => $mysqlHost,
+				'user' => $mysqlUser,
+				'password' => $mysqlPwd,
+				'port' => $mysqlPort
+			];
+
+			// Override
+			foreach(Config::DB_MYSQLDUMP_VARIABLES as $name => $val) $cmdOptions[$name] = $val;
+
+			// Force result-file
+			$cmdOptions['result-file'] = $dumpFile;
+			$cmdOptions['protocol'] = 'tcp';
+
+			$cmd = 'mysqldump ';
+			foreach($cmdOptions as $name => $value)
+			{
+				if ($value === true) $value = 'TRUE';
+				if ($value === false) $value = 'FALSE';
+				if (is_numeric($value)) $value = '' . $value;
+
+				if (is_string($value) == false) throw new Exception("Command param $name is not a string.");
+
+				$cmd .= ' --' . $name . '=' . escapeshellarg($value);
+			}
+
+			$cmd .= ' ' . escapeshellarg($mysqlDbname);
+			
+			CommandTools::exec($cmd, 'Error on mysqldump: ', $output);
+
+			if (count($output) > 0) $notifMessage .= "\n" . implode("\n", $output);
+		}
+		else // USE Mysqldump Class
+		{
+			$settings = [
+				'add-drop-database' => false,
+				'add-drop-table' => true,
+				'add-drop-trigger' => true,
+			];
+
+			foreach(Config::DB_DUMP_LIB_SETTINGS as $name => $val) $settings[$name] = $val;
+
+			$dump = new Mysqldump("mysql:host=$mysqlHost:$mysqlPort;dbname=$mysqlDbname", $mysqlUser, $mysqlPwd, $settings);
+			$dump->start($dumpFile);
+		}
+
+
 	}
 
 

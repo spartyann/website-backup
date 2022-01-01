@@ -7,21 +7,15 @@ Ce projet permet d'effectuer des sauvegardes de sites PHP/MySql/MariaDB. Il est 
 
 ## Fonctionnalités
 
-- Dump de la base de données avec toutes les options de la librairie _[Ifsnop\Mysqldump\Mysqldump]_
+- Dump de la base de données en deux options:
+	- Avec la libraire **[Ifsnop\Mysqldump\Mysqldump]** et toutes ses options 
+	sont configurable
+	- Avec la commande **mysqldump** et toutes ses options sont configurables
 - Compressions du dump avec les fichiers du site:
 	- ZIP : Extension PHP Zip
 	- TAR : Commande **tar** avec conservation des permissions des fichiers
 - Prise en charge de plusieurs répertoires de site
 - Suppression des vielles sauvegardes
-
-English:
-
-- Dump of the database with all the options of the library _[Ifsnop\Mysqldump\Mysqldump]_
-- Compresses the dump with the site files:
-	- ZIP : PHP Zip extension
-	- TAR: **tar** command with file permissions retention
-- Support for multiple site directories
-- Deletion of old backups
 
 ## Installation
 
@@ -46,7 +40,9 @@ Liste des paramètres:
 | DB_USER | 'mydb' | User du serveur de DB |
 | DB_PWD | 'yuj4f6ghj514d6fj516gh51sdgh' | Mot de passe du serveur de DB |
 | DB_DATABASE | 'mydb' | Nom de la base de données |
-| DB_DUMP_SETTINGS | [] | **Dump Settings** pour Ifsnop\Mysqldump\Mysqldump |
+| DB_USE_MYSQLDUMP_CMD | false | Si **true** => utilise la command mysqldump. Si **false** => utilise la libraire [Ifsnop\Mysqldump\Mysqldump] |
+| DB_MYSQLDUMP_VARIABLES | ```[ 'triggers' => true ]``` | Utiliser la commande:  _**mysqldump --help**_ pour voir toutes les variables en option |	
+| DB_DUMP_LIB_SETTINGS | ```[ 'add-locks' => false ]``` | **Dump Settings** pour [Ifsnop\Mysqldump\Mysqldump] |
 | FILES_ENABLED | true | Sauvegarde des fichiers du site activée |
 | filesDirs() | ```return [ dirname(dirname(__DIR__)) . '/ /site_test' ];``` | Liste des répertoires à sauvegarder. **Ne pas mettre de / à la fin** |
 | COMPRESSION_TYPE | 'tar' \| 'phpzip' | Format de compression. Utiliser **tar** pour conserver les permissions de fichiers |

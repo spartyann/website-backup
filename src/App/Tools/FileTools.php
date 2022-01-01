@@ -29,7 +29,7 @@ class FileTools
 		if (is_dir($dir) == false) mkdir($dir);
 		
 		$tmp = $dir . '/temp';
-		if (is_dir($dir)) shell_exec("rm -rf '$tmp'"); // Delete Tmp dir
+		if (is_dir($dir)) shell_exec("rm -rf " . escapeshellarg($tmp)); // Delete Tmp dir
 
 		// Create Tmp dir
 		mkdir($tmp);
@@ -101,12 +101,9 @@ class FileTools
 
 			$name = basename($file);
 			$dir = dirname($file);
-			$cmd = "cd '$dir' && tar --preserve-permissions -rf '$tarFile' '$name'";
+			$cmd = "cd " . escapeshellarg($dir) . " && tar --preserve-permissions -rf " .  escapeshellarg($tarFile) . " " . escapeshellarg($name);
 			
-			if (false === exec($cmd, $output))
-			{
-				throw new Exception("Error on tar: " . implode("\n", $output ));
-			}
+			CommandTools::exec($cmd, "Error on tar: ", $output);
 		}
 		
 		
@@ -117,12 +114,9 @@ class FileTools
 			$name = basename($dir);
 			$parentDir = dirname($dir);
 			
-			$cmd = "cd '$parentDir' && tar --preserve-permissions -rf '$tarFile' '$name'";
+			$cmd = "cd " . escapeshellarg($parentDir) . " && tar --preserve-permissions -rf " .  escapeshellarg($tarFile) . " " . escapeshellarg($name);
 
-			if (false === exec($cmd, $output))
-			{
-				throw new Exception("Error on tar: " . implode("\n", $output ));
-			}
+			CommandTools::exec($cmd, "Error on tar: ", $output);
 		}
 
 		// tar --preserve-permissions -cf "$BAK_FILE.tmp" *

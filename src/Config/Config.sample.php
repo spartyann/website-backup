@@ -21,7 +21,11 @@ class Config____Sample
 	public const DB_USER = 'mydb';
 	public const DB_PWD = 'yuj4f6ghj514d6fj516gh51sdgh';
 	public const DB_DATABASE = 'mydb';
-	public const DB_DUMP_SETTINGS = []; // Dump Settings for Ifsnop\Mysqldump\Mysqldump
+	public const DB_USE_MYSQLDUMP_CMD = false;
+	public const DB_MYSQLDUMP_VARIABLES = [
+		'triggers' => 'TRUE'
+	]; // Use command:  [ mysqldump --help ] to see all variables options
+	public const DB_DUMP_LIB_SETTINGS = []; // Dump Settings for Ifsnop\Mysqldump\Mysqldump
 
 	// Files
 	public const FILES_ENABLED = true;
