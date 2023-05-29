@@ -124,7 +124,6 @@ class FileTools
 			
 			$cmd = "cd " . escapeshellarg($parentDir) . " && tar --preserve-permissions -rf " .  escapeshellarg($tarFile) . " " . $transform . " " . escapeshellarg($name);
 
-		//	dd($cmd);
 			CommandTools::exec($cmd, "Error on tar: ", $output);
 		}
 

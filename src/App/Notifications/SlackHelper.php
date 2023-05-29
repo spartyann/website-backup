@@ -43,8 +43,6 @@ class SlackHelper
 		
 		$response = curl_exec( $ch );
 
-		dd(curl_error($ch));
-
 		curl_close( $ch );
 	}
 
