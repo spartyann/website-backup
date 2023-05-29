@@ -14,24 +14,46 @@ class Config____Sample
 	// Backup objects
 	//
 
-	// Database
-	public const DB_ENABLED = true;
-	public const DB_HOST = 'localhost';
-	public const DB_PORT = 3306;
-	public const DB_USER = 'mydb';
-	public const DB_PWD = 'yuj4f6ghj514d6fj516gh51sdgh';
-	public const DB_DATABASE = 'mydb';
+	// Database options
 	public const DB_USE_MYSQLDUMP_CMD = false;
 	public const DB_MYSQLDUMP_VARIABLES = [
 		'triggers' => 'TRUE'
 	]; // Use command:  [ mysqldump --help ] to see all variables options
 	public const DB_DUMP_LIB_SETTINGS = []; // Dump Settings for Ifsnop\Mysqldump\Mysqldump
 
-	// Files
-	public const FILES_ENABLED = true;
-	public static function filesDirs() { return [
-		dirname(dirname(__DIR__)) . '/tests/site_test'
-	]; } // Do NOT put / at the end 
+	// Items to Backup
+
+	public static function items() { return [
+		[
+			'type' => 'db',
+			'host' => 'localhost',
+			'port' => 3306,
+			'user' => 'mydb',
+			'pwd' => 'yuj4f6ghj514d6fj516gh51sdgh',
+			'db_name' => 'mydb',
+			'file_name' => 'mydb.sql' // Name file in ZIP
+		],
+		[
+			'type' => 'db',
+			'host' => 'localhost',
+			'port' => 3306,
+			'user' => 'mydb',
+			'pwd' => 'yuj4f6ghj514d6fj516gh51sdgh',
+			'db_name' => 'mydb',
+			'file_name' => 'mydb2.sql' // Name file in ZIP
+		],
+		[
+			'type' => 'dir',
+			'backup_dir' => 'files1', // dir in ZIP
+			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test'
+		],
+		[
+			'type' => 'dir',
+			'backup_dir' => 'files2', // dir in ZIP
+			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test'
+		]
+	]; }
+
 	//
 	// Backup options
 	//
@@ -58,5 +80,7 @@ class Config____Sample
 	public const NOTIF_DISCORD_WEBHOOK_URL = null;
 	public const NOTIF_ERROR_DISCORD_WEBHOOK_URL = null;
 
+	public const NOTIF_SLACK_WEBHOOK_URL = null;
+	public const NOTIF_ERROR_SLACK_WEBHOOK_URL = null;
 }
 

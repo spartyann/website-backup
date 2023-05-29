@@ -38,7 +38,7 @@ class FileTools
 	}
 
 		
-	public static function makePhpZip($zipFile, $files, $dirs)
+	public static function makePhpZip($zipFile, $files, $staticDirs)
 	{
 		// Initialize archive object
 		$zip = new ZipArchive();
@@ -51,17 +51,20 @@ class FileTools
 			$zip->addFile($file, basename($file));
 		}
 
-		foreach ($dirs as $dir)
+		foreach ($staticDirs as $item)
 		{
+			$backupDirName = $item['backup_dir'];
+			$dir = $item['dir'];
+
 			if (is_dir($dir) == false) throw new Exception("Directory does not exists: $dir");
 			
 			$dir = realpath($dir);
 			$dir = self::cleanAndCompleteDirPath($dir);
 			
-			$dir_name = basename($dir);
+			//$dir_name = basename($dir);
 			$dir_dir = dirname($dir);
 			
-			$zip->addEmptyDir($dir_name);
+			$zip->addEmptyDir($backupDirName);
 			
 			$files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir), RecursiveIteratorIterator::SELF_FIRST);
 			
@@ -73,7 +76,7 @@ class FileTools
 				if( in_array(substr($file, strrpos($file, '/')+1), array('.', '..')) )
 					continue;
 				
-				$localName = str_replace($dir_dir . '/', '', $file);
+				$localName = str_replace($dir_dir . '/', $backupDirName . '/', $file);
 				
 				if (is_dir($file) === true){
 					$zip->addEmptyDir($localName);
@@ -93,7 +96,7 @@ class FileTools
 
 
 
-	public static function tar($tarFile, $files, $dirs)
+	public static function tar($tarFile, $files, $staticDirs)
 	{
 		foreach($files as $file)
 		{
@@ -107,15 +110,21 @@ class FileTools
 		}
 		
 		
-		foreach($dirs as $dir)
+		foreach($staticDirs as $item)
 		{
+			$backupDirName = $item['backup_dir'];
+			$dir = $item['dir'];
+
 			if (is_dir($dir) == false) throw new Exception("Directory not found: $dir");
 			
 			$name = basename($dir);
 			$parentDir = dirname($dir);
-			
-			$cmd = "cd " . escapeshellarg($parentDir) . " && tar --preserve-permissions -rf " .  escapeshellarg($tarFile) . " " . escapeshellarg($name);
 
+			$transform = "--transform=" . escapeshellarg("s,^" . preg_quote($name, ',') . "," . preg_quote($backupDirName . '/' . $name, ',') . ",");
+			
+			$cmd = "cd " . escapeshellarg($parentDir) . " && tar --preserve-permissions -rf " .  escapeshellarg($tarFile) . " " . $transform . " " . escapeshellarg($name);
+
+		//	dd($cmd);
 			CommandTools::exec($cmd, "Error on tar: ", $output);
 		}
 

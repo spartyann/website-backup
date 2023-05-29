@@ -34,17 +34,10 @@ Liste des paramètres:
 
 | Option | Exemples | Description |
 | ------ | ------ | ------ |
-| DB_ENABLED | true | Dump de base de données activée |
-| DB_HOST | 'localhost' | Hôte du serveur de DB |
-| DB_PORT | 3306 | Port du serveur de DB |
-| DB_USER | 'mydb' | User du serveur de DB |
-| DB_PWD | 'yuj4f6ghj514d6fj516gh51sdgh' | Mot de passe du serveur de DB |
-| DB_DATABASE | 'mydb' | Nom de la base de données |
 | DB_USE_MYSQLDUMP_CMD | false | Si **true** => utilise la command mysqldump. Si **false** => utilise la libraire [Ifsnop\Mysqldump\Mysqldump] |
 | DB_MYSQLDUMP_VARIABLES | ```[ 'triggers' => true ]``` | Utiliser la commande:  _**mysqldump --help**_ pour voir toutes les variables en option |	
 | DB_DUMP_LIB_SETTINGS | ```[ 'add-locks' => false ]``` | **Dump Settings** pour [Ifsnop\Mysqldump\Mysqldump] |
-| FILES_ENABLED | true | Sauvegarde des fichiers du site activée |
-| filesDirs() | ```return [ dirname(dirname(__DIR__)) . '/ /site_test' ];``` | Liste des répertoires à sauvegarder. **Ne pas mettre de / à la fin** |
+| items() | Voir Config.sample.php | Liste des éléments à sauvegarder (DB et Fichiers) |
 | COMPRESSION_TYPE | 'tar' \| 'phpzip' | Format de compression. Utiliser **tar** pour conserver les permissions de fichiers |
 | localStorageBackupDir() | ```return dirname(dirname(__DIR__)) . '/backups';``` | Répertoire contenant toutes les sauvegardes. **Ne pas mettre de / à la fin** |
 | LOCAL_BACKUP_RETENTION | 'P1M' \| null | Temps de rétention des sauvegardes locales. Au format accepté par [\DateInterval] |
@@ -59,6 +52,8 @@ Liste des paramètres:
 | NOTIF_DISCORD_USERNAME | 'Cron job' | Notification Discord Username (pour affichage dans le salon) |
 | NOTIF_DISCORD_WEBHOOK_URL | null | Webhook du salon Discord |
 | NOTIF_ERROR_DISCORD_WEBHOOK_URL | null | Webhook du salon Discord pour les erreurs |
+| NOTIF_SLACK_WEBHOOK_URL | null | Webhook du salon Slack |
+| NOTIF_ERROR_SLACK_WEBHOOK_URL | null | Webhook du salon Slack pour les erreurs |
 
 ## Restauration
 

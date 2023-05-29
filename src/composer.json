@@ -2,9 +2,9 @@
     "name": "spartyann/website_backup",
     "type": "project",
     "require": {
-        "symfony/var-dumper": "^5.4",
-        "aws/aws-sdk-php": "^3.208",
-        "ifsnop/mysqldump-php": "^2.9"
+        "symfony/var-dumper": "^6.2",
+        "aws/aws-sdk-php": "^3.271",
+        "ifsnop/mysqldump-php": "^2.12"
     },
     "license": "MIT",
     "authors": [

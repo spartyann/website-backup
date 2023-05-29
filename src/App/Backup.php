@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Notifications\DiscordHelper;
+use App\Notifications\SlackHelper;
 use App\S3\S3Manager;
 use App\Tools\CommandTools;
 use App\Tools\FileTools;
@@ -32,28 +33,31 @@ class Backup
 			$backupFile = Config::localStorageBackupDir() . '/backup_' . $sfx . $backupExt;
 			$tempBackupFile = $tmpDir . '/backup' . $backupExt;
 
-		
-			// Database
-			if (Config::DB_ENABLED)
+
+			// Dump data base and prepare static dirs in $
+			$dumpFiles = [];
+			$staticDirs = [];
+			foreach(Config::items() as $item)
 			{
-				$dumpFile = $tmpDir . '/dump.sql';
-				self::dumpDb($dumpFile, $notifMessage);
+				if ($item['type'] == 'db')
+				{
+					$dumpFile = $tmpDir . '/' . $item['file_name'];
+					self::dumpDb($dumpFile, $item, $notifMessage);
+
+					$dumpFiles[] = $dumpFile;
+				}
+
+				if ($item['type'] == 'dir') $staticDirs[] = $item;
 			}
-		
+
 			// Compress with Files
 			if (Config::COMPRESSION_TYPE == 'phpzip')
 			{
-				FileTools::makePhpZip($tempBackupFile,
-					$dumpFile == null ? []: [ $dumpFile ],
-					Config::FILES_ENABLED ? Config::filesDirs() : []
-				);
+				FileTools::makePhpZip($tempBackupFile, $dumpFiles, $staticDirs);
 			}
 			else if (Config::COMPRESSION_TYPE == 'tar')
 			{
-				FileTools::tar($tempBackupFile,
-					$dumpFile == null ? []: [ $dumpFile ],
-					Config::FILES_ENABLED ? Config::filesDirs() : []
-				);
+				FileTools::tar($tempBackupFile, $dumpFiles, $staticDirs);
 			}
 
 			// Copy File
@@ -81,6 +85,12 @@ class Backup
 				DiscordHelper::sendMessage('Backup completed', DiscordHelper::escape($notifMessage), '#00ff00');
 			}
 
+			// Notify
+			if (Config::NOTIF_SLACK_WEBHOOK_URL != null)
+			{
+				SlackHelper::sendMessage('Backup completed', SlackHelper::escape($notifMessage));
+			}
+
 		}
 		catch (\Exception $ex)
 		{
@@ -91,6 +101,11 @@ class Backup
 			if (Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL != null)
 			{
 				DiscordHelper::sendMessage('Backup ERROR', DiscordHelper::escape($msg), '#ff0000', Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL);
+			}
+
+			if (Config::NOTIF_ERROR_SLACK_WEBHOOK_URL != null)
+			{
+				SlackHelper::sendMessage('Backup ERROR', SlackHelper::escape($msg), Config::NOTIF_ERROR_SLACK_WEBHOOK_URL);
 			}
 
 			if (Config::DEBUG) throw $ex;
@@ -171,13 +186,13 @@ class Backup
 	}
 
 
-	public static function dumpDb($dumpFile, string &$notifMessage)
+	public static function dumpDb($dumpFile, array $item, string &$notifMessage)
 	{
-		$mysqlHost = Config::DB_HOST;
-		$mysqlPort = Config::DB_PORT;
-		$mysqlDbname = Config::DB_DATABASE;
-		$mysqlUser = Config::DB_USER;
-		$mysqlPwd = Config::DB_PWD;
+		$mysqlHost = $item['host'];
+		$mysqlPort = $item['port'];
+		$mysqlDbname = $item['db_name'];
+		$mysqlUser = $item['user'];
+		$mysqlPwd = $item['pwd'];
 
 		if (Config::DB_USE_MYSQLDUMP_CMD)
 		{
