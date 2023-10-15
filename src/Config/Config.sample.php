@@ -51,7 +51,19 @@ class Config____Sample
 			'type' => 'dir',
 			'backup_dir' => 'files2', // dir in ZIP
 			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test'
-		]
+		],
+		[
+			'type' => 'mail_imap',
+			'backup_dir' => 'mails', // dir in ZIP
+			'mailbox' => '{mail.infomaniak.com:993/imap/ssl}', // Server or Path
+			'user' => 'xxxxxxxxxxxxxxxx',
+			'password' => 'xxxxxxxxxxxxxx',
+			'retries' => 0,
+			'options' => null,
+			'mail_boxes' => ['INBOX', 'Sent'],
+			//'mail_boxes' => null, // All Boxes
+			'mails_sync_dir' => dirname(dirname(__DIR__)) . '/tests/mails'
+		],
 	]; }
 
 	//
