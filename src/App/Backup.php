@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Mail\MailDownloader;
 use App\Notifications\DiscordHelper;
 use App\Notifications\SlackHelper;
 use App\S3\S3Manager;
@@ -46,8 +47,25 @@ class Backup
 
 					$dumpFiles[] = $dumpFile;
 				}
+				else if ($item['type'] == 'dir') $staticDirs[] = $item;
+				else if ($item['type'] == 'mail_imap')
+				{
+					MailDownloader::downloadMails(
+						$item['mailbox'],
+						$item['user'],
+						$item['password'],
+						$item['retries'],
+						$item['options'],
+						$item['mail_boxes'],
+						$item['mails_sync_dir']
+					);
 
-				if ($item['type'] == 'dir') $staticDirs[] = $item;
+					$staticDirs[] = [
+						'backup_dir' => $item['backup_dir'],
+						'dir' => $item['mails_sync_dir']
+					];
+				}
+				else throw new \Exception("Invalid item Type: [$item[type]]");
 			}
 
 			// Compress with Files

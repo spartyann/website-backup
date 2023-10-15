@@ -10,6 +10,39 @@ use ZipArchive;
 
 class FileTools 
 {
+	
+	public static function getAllSubDirectories($dir)
+	{
+		if (is_dir($dir) == false) return [];
+		$subDirs = glob($dir . '/*', GLOB_ONLYDIR);
+
+		$res = [];
+		foreach ($subDirs as $subDir)
+		{
+			$res[] = $subDir;
+			$res = array_merge($res, self::getAllSubDirectories($subDir));
+		}
+
+		return $res;
+	}
+	
+	public static function cleanupFileChars($string)
+	{
+		$string = str_replace(' ', '-', $string);
+		$string = preg_replace('/[^A-Za-z0-9\-\_]/', '', $string);
+		$string = preg_replace('/-+/', '-', $string);
+		return $string;
+	}
+
+	public static function removeDir($dir)
+	{
+		if (is_dir($dir))
+		{
+			if (IS_WIN == false) shell_exec("rm -rf " . escapeshellarg($dir)); // Delete Tmp dir
+			if (IS_WIN) shell_exec("rmdir /s /q " . escapeshellarg($dir)); // Delete Tmp dir
+		}
+	}
+
     public static function getReadableSize($bytes, $decimals = 2){
 		$size = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
 		$factor = floor((strlen($bytes) - 1) / 3);
@@ -29,10 +62,11 @@ class FileTools
 		if (is_dir($dir) == false) mkdir($dir);
 		
 		$tmp = $dir . '/temp';
-		if (is_dir($dir)) shell_exec("rm -rf " . escapeshellarg($tmp)); // Delete Tmp dir
+
+		self::removeDir($tmp);
 
 		// Create Tmp dir
-		mkdir($tmp);
+		if (is_dir($tmp) == false) mkdir($tmp);
 
 		return $tmp;
 	}
