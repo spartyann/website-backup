@@ -28,6 +28,8 @@ class SlackHelper
 
 	public static function sendMessage(string $title, string $msg, string $hookUrl = null)
 	{
+		$title = preg_replace('/[^A-Za-z0-9\-\_ ]/', '', $title);
+
 		$title = self::ellipsis($title, 300);
 		$msg = self::ellipsis($msg, 8000);
 		

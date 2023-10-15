@@ -19,13 +19,13 @@ class MailDownloader
 	{
 		if (is_dir($mailsSyncDir) == false) mkdir($mailsSyncDir);
 
-		$co = imap_open($mailbox, $user, $password, OP_READONLY, $retries, $options ?? []);
+		$co = \imap_open($mailbox, $user, $password, OP_READONLY, $retries, $options ?? []);
 		
-		if ($co == false) throw new \Exception("Unable to IMAP login: " . imap_last_error());
+		if ($co == false) throw new \Exception("Unable to IMAP login: " . \imap_last_error());
 
-		$mailBoxesDesc = imap_getmailboxes($co, $mailbox, '*');
+		$mailBoxesDesc = \imap_getmailboxes($co, $mailbox, '*');
 
-		if ($mailBoxesNames == null) $mailBoxesNames =  imap_list($co, $mailbox, '*');
+		if ($mailBoxesNames == null) $mailBoxesNames =  \imap_list($co, $mailbox, '*');
 		else $mailBoxesNames = array_map(function($item) use($mailbox) { return $mailbox . $item; }, $mailBoxesNames);
 
 		file_put_contents($mailsSyncDir . '/email_boxes.txt', json_encode($mailBoxesDesc, JSON_PRETTY_PRINT));
@@ -35,8 +35,8 @@ class MailDownloader
 
 		foreach ($mailBoxesNames as $box)
 		{
-			imap_close($co);
-			$co = imap_open($box, $user, $password, OP_READONLY, $retries, $options ?? []);
+			\imap_close($co);
+			$co = \imap_open($box, $user, $password, OP_READONLY, $retries, $options ?? []);
 
 			if (1 !== preg_match("/(\{[^\}]+\})(.+)/i", $box, $matches)) throw new \Exception('Invalid Mail Box Name: ' . $box);
 
@@ -48,13 +48,13 @@ class MailDownloader
 			if (is_dir($boxDir) == false) mkdir($boxDir);
 
 			// Get Num mails
-			$numMails = imap_num_msg($co);
+			$numMails = \imap_num_msg($co);
 
 			// Has mails ?
 			if ($numMails == 0) continue; // NO MAILS
 
 			// Get overview
-			$overviews = imap_fetch_overview($co, "1:$numMails" );
+			$overviews = \imap_fetch_overview($co, "1:$numMails" );
 
 			file_put_contents($boxDir . '/all_emails.txt', json_encode($overviews, JSON_PRETTY_PRINT));
 
@@ -67,19 +67,21 @@ class MailDownloader
 			{
 				$udate = new \DateTime();
 				$udate->setTimestamp($overview->udate);
+
+				$subject = imap_utf8($overview->subject);
 				
 				$emailFileName = 'email_' . $overview->uid
 					. '_' . $udate->format('Y-m-d_H-i')
-					. '-' . FileTools::cleanupFileChars(substr($overview->subject, 0, 50))
+					. '-' . FileTools::cleanupFileChars(substr($subject, 0, 50))
 					. '.eml';
 
 				$emailFileNames[$emailFileName] = $emailFileName;
 
 				if (in_array($emailFileName, $existingEmailFiles)) continue;
 
-				//echo "\nDownload email: " . $overview->subject;
+				//echo "\nDownload email: " . $subject;
 
-				imap_savebody($co, $boxDir . "/" . $emailFileName, $overview->msgno);
+				\imap_savebody($co, $boxDir . "/" . $emailFileName, $overview->msgno);
 			}
 
 			foreach ($existingEmailFiles as $fileName)

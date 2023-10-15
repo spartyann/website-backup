@@ -25,8 +25,18 @@ class DiscordHelper
 		return $string;
 	}
 
+	public static function ellipsis(string $string, int $max = 300)
+	{
+		if (strlen($string) > $max) return substr($string, 0, $max) . '[...]';
+		return $string;
+	}
+
 	public static function sendMessage(string $title, string $msg, string $colorHex = null, string $hookUrl = null)
 	{
+		$title = preg_replace('/[^A-Za-z0-9\-\_ ]/', '', $title);
+
+		$title = self::ellipsis($title, 200);
+
 		// Truncate to 2000
 
 		$json_data = json_encode([

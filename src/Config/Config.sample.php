@@ -54,7 +54,7 @@ class Config____Sample
 		],
 		[
 			'type' => 'mail_imap',
-			'backup_dir' => 'mails', // dir in ZIP
+			'backup_dir' => 'mails', // dir in ZIP. Put NULL to not include in ZIP
 			'mailbox' => '{mail.infomaniak.com:993/imap/ssl}', // Server or Path
 			'user' => 'xxxxxxxxxxxxxxxx',
 			'password' => 'xxxxxxxxxxxxxx',
@@ -88,6 +88,9 @@ class Config____Sample
 	public const S3_BACKUP_RETENTION = 'P1M'; // Put null to disable automatic deletion
 
 	// Notifications
+	public const NOTIF_ERROR_TITLE = null;
+	public const NOTIF_TITLE = null;
+	
 	public const NOTIF_DISCORD_USERNAME = 'Cron job';
 	public const NOTIF_DISCORD_WEBHOOK_URL = null;
 	public const NOTIF_ERROR_DISCORD_WEBHOOK_URL = null;

@@ -66,7 +66,7 @@ class FileTools
 		self::removeDir($tmp);
 
 		// Create Tmp dir
-		if (is_dir($tmp) == false) mkdir($tmp);
+		mkdir($tmp);
 
 		return $tmp;
 	}

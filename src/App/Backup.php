@@ -60,38 +60,46 @@ class Backup
 						$item['mails_sync_dir']
 					);
 
-					$staticDirs[] = [
-						'backup_dir' => $item['backup_dir'],
-						'dir' => $item['mails_sync_dir']
-					];
+					if ($item['backup_dir'] != null)
+					{
+						$staticDirs[] = [
+							'backup_dir' => $item['backup_dir'],
+							'dir' => $item['mails_sync_dir']
+						];
+					}
 				}
 				else throw new \Exception("Invalid item Type: [$item[type]]");
 			}
 
-			// Compress with Files
-			if (Config::COMPRESSION_TYPE == 'phpzip')
+			// Has Files to ZIP ?
+			if (count($dumpFiles) > 0 || count($staticDirs) > 0)
 			{
-				FileTools::makePhpZip($tempBackupFile, $dumpFiles, $staticDirs);
+				// Compress with Files
+				if (Config::COMPRESSION_TYPE == 'phpzip')
+				{
+					FileTools::makePhpZip($tempBackupFile, $dumpFiles, $staticDirs);
+				}
+				else if (Config::COMPRESSION_TYPE == 'tar')
+				{
+					FileTools::tar($tempBackupFile, $dumpFiles, $staticDirs);
+				}
+
+				// Copy File
+				rename($tempBackupFile, $backupFile);
+				$size = FileTools::getReadableSize(filesize($backupFile));
+
+				$notifMessage .=  'File: ' . basename($backupFile) . ' (' . $size . ')' . "\n";
+
+
+				// Send S3
+				if (Config::S3_ENABLED)
+				{
+					$s3Key = Config::S3_DIR . '/' . basename($backupFile);
+					S3Manager::put($s3Key, $backupFile);
+					$notifMessage .= 'Copied to S3: ' . $s3Key;
+				}
 			}
-			else if (Config::COMPRESSION_TYPE == 'tar')
-			{
-				FileTools::tar($tempBackupFile, $dumpFiles, $staticDirs);
-			}
 
-			// Copy File
-			rename($tempBackupFile, $backupFile);
-			$size = FileTools::getReadableSize(filesize($backupFile));
-
-			$notifMessage .=  'File: ' . basename($backupFile) . ' (' . $size . ')' . "\n";
-
-
-			// Send S3
-			if (Config::S3_ENABLED)
-			{
-				$s3Key = Config::S3_DIR . '/' . basename($backupFile);
-				S3Manager::put($s3Key, $backupFile);
-				$notifMessage .= 'Copied to S3: ' . $s3Key;
-			}
 
 			// Delete old Backup
 			self::removeOldBackup($notifMessage);
@@ -100,13 +108,13 @@ class Backup
 			// Notify
 			if (Config::NOTIF_DISCORD_WEBHOOK_URL != null)
 			{
-				DiscordHelper::sendMessage('Backup completed', DiscordHelper::escape($notifMessage), '#00ff00');
+				DiscordHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', DiscordHelper::escape($notifMessage), '#00ff00');
 			}
 
 			// Notify
 			if (Config::NOTIF_SLACK_WEBHOOK_URL != null)
 			{
-				SlackHelper::sendMessage('Backup completed', SlackHelper::escape($notifMessage));
+				SlackHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', SlackHelper::escape($notifMessage));
 			}
 
 		}
@@ -118,12 +126,12 @@ class Backup
 			// Notify
 			if (Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL != null)
 			{
-				DiscordHelper::sendMessage('Backup ERROR', DiscordHelper::escape($msg), '#ff0000', Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL);
+				DiscordHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', DiscordHelper::escape($msg), '#ff0000', Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL);
 			}
 
 			if (Config::NOTIF_ERROR_SLACK_WEBHOOK_URL != null)
 			{
-				SlackHelper::sendMessage('Backup ERROR', SlackHelper::escape($msg), Config::NOTIF_ERROR_SLACK_WEBHOOK_URL);
+				SlackHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', SlackHelper::escape($msg), Config::NOTIF_ERROR_SLACK_WEBHOOK_URL);
 			}
 
 			if (Config::DEBUG) throw $ex;
