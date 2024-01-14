@@ -89,6 +89,8 @@ class FileTools
 		{
 			$backupDirName = $item['backup_dir'];
 			$dir = $item['dir'];
+			$ignoreExtensions = $item['ignore_extensions'] ?? null;
+			if ($ignoreExtensions != null) $ignoreExtensions = array_map(function($s) { return strtolower($s);}, $ignoreExtensions);
 
 			if (is_dir($dir) == false) throw new Exception("Directory does not exists: $dir");
 			
@@ -105,6 +107,12 @@ class FileTools
 			foreach ($files as $file)
 			{
 				$file = str_replace('\\', '/', $file);
+
+				if ($ignoreExtensions != null)
+				{
+					$ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+					if (in_array($ext, $ignoreExtensions)) continue;
+				}
 				
 				// Ignore "." and ".." folders
 				if( in_array(substr($file, strrpos($file, '/')+1), array('.', '..')) )
@@ -156,7 +164,21 @@ class FileTools
 
 			$transform = "--transform=" . escapeshellarg("s,^" . preg_quote($name, ',') . "," . preg_quote($backupDirName . '/' . $name, ',') . ",");
 			
-			$cmd = "cd " . escapeshellarg($parentDir) . " && tar --preserve-permissions -rf " .  escapeshellarg($tarFile) . " " . $transform . " " . escapeshellarg($name);
+			$exclude = '';
+			if (isset($item['tar_exclude']) && empty($item['tar_exclude']) == false)
+			{
+				foreach(is_array($item['tar_exclude']) ? $item['tar_exclude'] : [ $item['tar_exclude'] ] as $exc)
+				{
+					$exclude .= ' --exclude="' . preg_quote($exc) . '"';
+				}
+			}
+
+			foreach ($item['ignore_extensions'] ?? [] as $ext)
+			{
+				$exclude .= ' --exclude="*.' . preg_quote($ext) . '"';
+			}
+
+			$cmd = "cd " . escapeshellarg($parentDir) . " && tar --preserve-permissions $exclude -rf " .  escapeshellarg($tarFile) . " " . $transform . " " . escapeshellarg($name);
 
 			CommandTools::exec($cmd, "Error on tar: ", $output);
 		}

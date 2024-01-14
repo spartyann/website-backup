@@ -50,7 +50,9 @@ class Config____Sample
 		[
 			'type' => 'dir',
 			'backup_dir' => 'files2', // dir in ZIP
-			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test'
+			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test',
+			//'ignore_extensions' => [ 'MP4', 'mkv' ],
+			//'tar_exclude' => 'pattern' or ['pattern1', 'pattern2'], // Pattern for tar command, --exclude option
 		],
 		[
 			'type' => 'mail_imap',
