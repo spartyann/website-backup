@@ -118,7 +118,7 @@ class Backup
 			}
 
 		}
-		catch (\Exception $ex)
+		catch (\Throwable $ex)
 		{
 			$msg = $ex->getMessage();
 			$msg .= "\n" . $ex->getTraceAsString();
