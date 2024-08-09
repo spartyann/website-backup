@@ -270,7 +270,7 @@ class Backup
 
 			foreach(Config::DB_DUMP_LIB_SETTINGS as $name => $val) $settings[$name] = $val;
 
-			$dump = new Mysqldump("mysql:host=$mysqlHost:$mysqlPort;dbname=$mysqlDbname", $mysqlUser, $mysqlPwd, $settings);
+			$dump = new Mysqldump("mysql:host=$mysqlHost;port=$mysqlPort;dbname=$mysqlDbname", $mysqlUser, $mysqlPwd, $settings);
 			$dump->start($dumpFile);
 		}
 
