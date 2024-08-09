@@ -7,7 +7,7 @@ class SlackHelper
 {
 	public static function escape(string $string)
 	{
-		$string = str_replace('_', '\_', $string);
+		//$string = str_replace('_', '\_', $string);
 		$string = str_replace('*', '\*', $string);
 		$string = str_replace('*', '\*', $string);
 		$string = str_replace('~', '\~', $string);
