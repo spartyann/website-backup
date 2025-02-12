@@ -8,14 +8,29 @@ use App\Notifications\SlackHelper;
 use App\S3\S3Manager;
 use App\Tools\CommandTools;
 use App\Tools\FileTools;
+use App\Tools\PrintTools;
 use Config\Config;
 use Exception;
 use Ifsnop\Mysqldump\Mysqldump;
 
 class Backup 
 {
-    public static function run()
+    public static function run(string $onlyThisGroup = null)
 	{
+		PrintTools::text("Starting Backup" . ($onlyThisGroup == null ? '' : ('Group selected: ' . $onlyThisGroup)));
+
+		foreach(Config::groups() as $groupName => $group)
+		{
+			if ($onlyThisGroup != null && $groupName != $onlyThisGroup) continue;
+
+			PrintTools::title1("Backup Group: " . $groupName);
+			self::backupGroup($group['prefix'] ?? 'backup_', $group['items'], $group['send_s3'] ?? true);
+		}
+	}
+
+	private static function backupGroup(string $backfilePrefix, array $itemsToBackup, bool $groupSendS3 = false)
+	{
+
 		try
 		{
 			$tmpDir = FileTools::prepareTempDir();
@@ -31,25 +46,34 @@ class Backup
 
 			$backupExt = Config::COMPRESSION_TYPE == 'tar' ? '.tar': '.zip';
 
-			$backupFile = Config::localStorageBackupDir() . '/backup_' . $sfx . $backupExt;
+			$backupFile = Config::localStorageBackupDir() . '/' . $backfilePrefix . $sfx . $backupExt;
 			$tempBackupFile = $tmpDir . '/backup' . $backupExt;
 
 
 			// Dump data base and prepare static dirs in $
 			$dumpFiles = [];
 			$staticDirs = [];
-			foreach(Config::items() as $item)
+			foreach($itemsToBackup as $item)
 			{
 				if ($item['type'] == 'db')
 				{
+					PrintTools::text("Backup DB: " . $item['db_name']);
+
 					$dumpFile = $tmpDir . '/' . $item['file_name'];
 					self::dumpDb($dumpFile, $item, $notifMessage);
 
 					$dumpFiles[] = $dumpFile;
 				}
-				else if ($item['type'] == 'dir') $staticDirs[] = $item;
+				else if ($item['type'] == 'dir')
+				{
+					PrintTools::text("Backup Files: " . $item['dir']);
+					$staticDirs[] = $item;
+				}
 				else if ($item['type'] == 'mail_imap')
 				{
+					
+					PrintTools::text("Backup MAIL: " . $item['user']);
+
 					MailDownloader::downloadMails(
 						$item['mailbox'],
 						$item['user'],
@@ -77,12 +101,16 @@ class Backup
 				// Compress with Files
 				if (Config::COMPRESSION_TYPE == 'phpzip')
 				{
+					PrintTools::text("Creating ZIP Archive...");
 					FileTools::makePhpZip($tempBackupFile, $dumpFiles, $staticDirs);
 				}
 				else if (Config::COMPRESSION_TYPE == 'tar')
 				{
+					PrintTools::text("Creating TAR Archive...");
 					FileTools::tar($tempBackupFile, $dumpFiles, $staticDirs);
 				}
+
+				PrintTools::text("done");
 
 				// Copy File
 				rename($tempBackupFile, $backupFile);
@@ -92,10 +120,13 @@ class Backup
 
 
 				// Send S3
-				if (Config::S3_ENABLED)
+				if (Config::S3_ENABLED && $groupSendS3)
 				{
+					PrintTools::text("Sending to S3...");
 					$s3Key = Config::S3_DIR . '/' . basename($backupFile);
 					S3Manager::put($s3Key, $backupFile);
+					
+					PrintTools::text("done");
 					$notifMessage .= 'Copied to S3: ' . $s3Key;
 				}
 			}
@@ -104,16 +135,19 @@ class Backup
 			// Delete old Backup
 			self::removeOldBackup($notifMessage);
 
+			PrintTools::text("Backup COMPLETE !");
 
 			// Notify
 			if (Config::NOTIF_DISCORD_WEBHOOK_URL != null)
 			{
+				PrintTools::text("Sending discord notif");
 				DiscordHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', DiscordHelper::escape($notifMessage), '#00ff00');
 			}
 
 			// Notify
 			if (Config::NOTIF_SLACK_WEBHOOK_URL != null)
 			{
+				PrintTools::text("Sending Slack notif");
 				SlackHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', SlackHelper::escape($notifMessage));
 			}
 
@@ -122,6 +156,9 @@ class Backup
 		{
 			$msg = $ex->getMessage();
 			$msg .= "\n" . $ex->getTraceAsString();
+
+			PrintTools::title2("ERROR");
+			PrintTools::text($msg);
 
 			// Notify
 			if (Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL != null)
@@ -151,7 +188,9 @@ class Backup
 
 			foreach($files as $file)
 			{
+				PrintTools::text("Removing: " . $file);
 				unlink($file);
+				PrintTools::text("done");
 				$notifMessage .= "\nDeleted: $file";
 			}
 		}
@@ -166,7 +205,9 @@ class Backup
 
 			foreach($files as $file)
 			{
+				PrintTools::text("Removing S3 file: " . $file);
 				S3Manager::delete($file);
+				PrintTools::text("done");
 				$notifMessage .= "\nDeleted S3: $file";
 			}
 		}

@@ -66,7 +66,10 @@ class FileTools
 		self::removeDir($tmp);
 
 		// Create Tmp dir
-		mkdir($tmp);
+		if (mkdir($tmp) == false)
+		{
+			throw new \Exception('Cannot create Temp Dir.');
+		}
 
 		return $tmp;
 	}

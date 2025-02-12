@@ -23,50 +23,53 @@ class Config____Sample
 
 	// Items to Backup
 
-	public static function items() { return [
-		[
-			'type' => 'db',
-			'host' => 'localhost',
-			'port' => 3306,
-			'user' => 'mydb',
-			'pwd' => 'yuj4f6ghj514d6fj516gh51sdgh',
-			'db_name' => 'mydb',
-			'file_name' => 'mydb.sql' // Name file in ZIP
-		],
-		[
-			'type' => 'db',
-			'host' => 'localhost',
-			'port' => 3306,
-			'user' => 'mydb',
-			'pwd' => 'yuj4f6ghj514d6fj516gh51sdgh',
-			'db_name' => 'mydb',
-			'file_name' => 'mydb2.sql' // Name file in ZIP
-		],
-		[
-			'type' => 'dir',
-			'backup_dir' => 'files1', // dir in ZIP
-			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test'
-		],
-		[
-			'type' => 'dir',
-			'backup_dir' => 'files2', // dir in ZIP
-			'dir' => dirname(dirname(__DIR__)) . '/tests/site_test',
-			//'ignore_extensions' => [ 'MP4', 'mkv' ],
-			//'tar_exclude' => 'pattern' or ['pattern1', 'pattern2'], // Pattern for tar command, --exclude option
-		],
-		[
-			'type' => 'mail_imap',
-			'backup_dir' => 'mails', // dir in ZIP. Put NULL to not include in ZIP
-			'mailbox' => '{mail.infomaniak.com:993/imap/ssl}', // Server or Path
-			'user' => 'xxxxxxxxxxxxxxxx',
-			'password' => 'xxxxxxxxxxxxxx',
-			'retries' => 0,
-			'options' => null,
-			'mail_boxes' => ['INBOX', 'Sent'],
-			//'mail_boxes' => null, // All Boxes
-			'mails_sync_dir' => dirname(dirname(__DIR__)) . '/tests/mails'
-		],
-	]; }
+	
+	public static function groups() {
+		return [
+			//'<nom du groupe>' => [ <Paramètres du groupe> ]
+			'my_site' => [
+				'prefix' => 'my_site_', // Préfixe du fichier
+				'send_s3' => true, // Envoi sur S3 si configuré
+				'items' => [ // Eléments à sauvegarder
+					[
+						'type' => 'db',
+						'host' => 'localhost',
+						'port' => 3306,
+						'user' => 'root',
+						'pwd' => '',
+						'db_name' => 'DB1',
+						'file_name' => 'DB1.sql' // Name file in ZIP
+					],
+					[
+						'type' => 'dir',
+						'backup_dir' => 'files1', // dir in ZIP
+						'dir' => dirname(dirname(__DIR__)) . '/tests/site_test'
+					],
+				]
+			],
+			//'<nom du groupe>' => [ <Paramètres du groupe> ]
+			'mails' => [
+				'prefix' => 'mails_',
+				'send_s3' => true,
+				'items' => [
+					[
+						'type' => 'mail_imap',
+						'backup_dir' => 'mails', // dir in ZIP
+						'mailbox' => '{mail.infomaniak.com:993/imap/ssl}', // Server or Path
+						'user' => 'xxxxxxxxxxxxx@ik.me',
+						'password' => 'xxxxxxxxxxxxxxxxxx',
+						'retries' => 0,
+						'options' => null,
+						'mail_boxes' => ['INBOX', 'Sent'],
+						//'mail_boxes' => null, //['INBOX', 'Sent'],
+						'mails_sync_dir' => dirname(dirname(__DIR__)) . '/tests/mails'
+					],
+					
+				]
+			]
+
+		];
+	}
 
 	//
 	// Backup options
