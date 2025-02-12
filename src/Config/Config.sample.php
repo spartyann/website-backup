@@ -21,14 +21,17 @@ class Config____Sample
 	]; // Use command:  [ mysqldump --help ] to see all variables options
 	public const DB_DUMP_LIB_SETTINGS = []; // Dump Settings for Ifsnop\Mysqldump\Mysqldump
 
-	// Items to Backup
+	// When calling by URL provide this token. ?token=xxx
+	public const URL_TOKEN = 'xxxxxxxxxxxx';
 
-	
+
+	// Items to Backup
 	public static function groups() {
 		return [
 			//'<nom du groupe>' => [ <Paramètres du groupe> ]
 			'my_site' => [
 				'prefix' => 'my_site_', // Préfixe du fichier
+				'suffix' => '', // Suffixe du fichier
 				'send_s3' => true, // Envoi sur S3 si configuré
 				'items' => [ // Eléments à sauvegarder
 					[

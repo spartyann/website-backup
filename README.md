@@ -38,10 +38,13 @@ php .\backup.php
 php .\backup.php -g <Groupes de sauvegarde à lancer> --verbose
 ```
 
-Ou via URL: `https://<YOUR_URL>/backup.php`
-Avec les options: `https://<YOUR_URL>/backup.php?g=<Groupes de sauvegarde à lancer>&verbose=1`
+Ou via URL: `https://<YOUR_URL>/backup.php?token=<token>`
+
+Avec les options: `https://<YOUR_URL>/backup.php?token=<token>&g=<Groupes de sauvegarde à lancer>&verbose=1`
 
 Vous pouvez aussi forcer le remplacement des `<br />` par `\n` avec l'option: `&br=0`
+
+Le paramètre `<token>` doit être spécifié dans le fichier de Configuration
 
 Le paramètre `<Groupes de sauvegarde à lancer>` contient la liste des groupes à lancer séparés par une virgule `,`
 
@@ -49,7 +52,7 @@ Exemples:
 ```
 php .\backup.php -g group1,group2 --verbose
 
-URL: https://<YOUR_URL>/backup.php?g=group1,group2&verbose=1
+URL: https://<YOUR_URL>/backup.php?token=xxxxx&g=group1,group2&verbose=1
 ```
 
 ## Paramètres du fichier Config.php
@@ -61,6 +64,7 @@ Liste des paramètres:
 | DB_USE_MYSQLDUMP_CMD | false | Si **true** => utilise la command mysqldump. Si **false** => utilise la libraire [Ifsnop\Mysqldump\Mysqldump] |
 | DB_MYSQLDUMP_VARIABLES | ```[ 'triggers' => true ]``` | Utiliser la commande:  _**mysqldump --help**_ pour voir toutes les variables en option |	
 | DB_DUMP_LIB_SETTINGS | ```[ 'add-locks' => false ]``` | **Dump Settings** pour [Ifsnop\Mysqldump\Mysqldump] |
+| URL_TOKEN | Token d'authentification | Utilisé lors des appel via URL. Ajouter dans l'URL `&token=<valeur de votre token>` |
 | groups() | Voir Config.sample.php | Liste des éléments à sauvegarder. (DB, Fichiers et Email) |
 | COMPRESSION_TYPE | 'tar' \| 'phpzip' | Format de compression. Utiliser **tar** pour conserver les permissions de fichiers |
 | localStorageBackupDir() | ```return dirname(dirname(__DIR__)) . '/backups';``` | Répertoire contenant toutes les sauvegardes. **Ne pas mettre de / à la fin** |

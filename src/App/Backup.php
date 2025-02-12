@@ -17,6 +17,8 @@ class Backup
 {
     public static function run(string $onlyThisGroups = null)
 	{
+		$start = time();
+
 		PrintTools::text("Starting Backup" . ($onlyThisGroups == null ? '' : ('Group selected: ' . $onlyThisGroups)));
 
 		$onlyThisGroupsList = explode(',', $onlyThisGroups ?? '');
@@ -26,13 +28,20 @@ class Backup
 			if ($onlyThisGroups != null && in_array($groupName, $onlyThisGroupsList) == false) continue;
 
 			PrintTools::title1("Backup Group: " . $groupName);
-			self::backupGroup($group['prefix'] ?? 'backup_', $group['items'], $group['send_s3'] ?? true);
+			self::backupGroup($group['prefix'] ?? 'backup_', $group['suffix'] ?? '', $group['items'], $group['send_s3'] ?? true);
 		}
+
+		$end = time();
+
+		PrintTools::text('');
+		PrintTools::text("**** ALL Groups completed in " . ($end - $start) . 's');
+		PrintTools::text('');
+
 	}
 
-	private static function backupGroup(string $backfilePrefix, array $itemsToBackup, bool $groupSendS3 = false)
+	private static function backupGroup(string $backfilePrefix, string $backfileSuffix, array $itemsToBackup, bool $groupSendS3 = false)
 	{
-
+		$start = time();
 		try
 		{
 			$tmpDir = FileTools::prepareTempDir();
@@ -48,7 +57,7 @@ class Backup
 
 			$backupExt = Config::COMPRESSION_TYPE == 'tar' ? '.tar': '.zip';
 
-			$backupFile = Config::localStorageBackupDir() . '/' . $backfilePrefix . $sfx . $backupExt;
+			$backupFile = Config::localStorageBackupDir() . '/' . $backfilePrefix . $sfx . $backfileSuffix . $backupExt;
 			$tempBackupFile = $tmpDir . '/backup' . $backupExt;
 
 
@@ -137,7 +146,8 @@ class Backup
 			// Delete old Backup
 			self::removeOldBackup($notifMessage);
 
-			PrintTools::text("Backup COMPLETE !");
+			$end = time();
+			PrintTools::text("Backup COMPLETE in " . ($end - $start) . "s !");
 
 			// Notify
 			if (Config::NOTIF_DISCORD_WEBHOOK_URL != null)
