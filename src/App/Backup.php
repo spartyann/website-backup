@@ -15,13 +15,15 @@ use Ifsnop\Mysqldump\Mysqldump;
 
 class Backup 
 {
-    public static function run(string $onlyThisGroup = null)
+    public static function run(string $onlyThisGroups = null)
 	{
-		PrintTools::text("Starting Backup" . ($onlyThisGroup == null ? '' : ('Group selected: ' . $onlyThisGroup)));
+		PrintTools::text("Starting Backup" . ($onlyThisGroups == null ? '' : ('Group selected: ' . $onlyThisGroups)));
+
+		$onlyThisGroupsList = explode(',', $onlyThisGroups ?? '');
 
 		foreach(Config::groups() as $groupName => $group)
 		{
-			if ($onlyThisGroup != null && $groupName != $onlyThisGroup) continue;
+			if ($onlyThisGroups != null && in_array($groupName, $onlyThisGroupsList) == false) continue;
 
 			PrintTools::title1("Backup Group: " . $groupName);
 			self::backupGroup($group['prefix'] ?? 'backup_', $group['items'], $group['send_s3'] ?? true);

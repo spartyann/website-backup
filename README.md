@@ -35,13 +35,22 @@ Soit via CLI
 php .\backup.php
 
 # Options:
-php .\backup.php -g <Groupe se sauvegarde à lancer> --verbose
+php .\backup.php -g <Groupes de sauvegarde à lancer> --verbose
 ```
 
 Ou via URL: `https://<YOUR_URL>/backup.php`
-Avec les options: `https://<YOUR_URL>/backup.php?g=<Groupe se sauvegarde à lancer>&verbose=1`
+Avec les options: `https://<YOUR_URL>/backup.php?g=<Groupes de sauvegarde à lancer>&verbose=1`
 
 Vous pouvez aussi forcer le remplacement des `<br />` par `\n` avec l'option: `&br=0`
+
+Le paramètre `<Groupes de sauvegarde à lancer>` contient la liste des groupes à lancer séparés par une virgule `,`
+
+Exemples:
+```
+php .\backup.php -g group1,group2 --verbose
+
+URL: https://<YOUR_URL>/backup.php?g=group1,group2&verbose=1
+```
 
 ## Paramètres du fichier Config.php
 
