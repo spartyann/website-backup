@@ -240,7 +240,7 @@ class Backup
 			
 			$matches = [];
 			//Y-m-d__H-i-s
-			if (preg_match("/([0-9]+)-([0-9]+)-([0-9]+)__([0-9]+)-([0-9]+)-([0-9]+)\.[a-z]+/", $file, $matches) !== 1) continue;
+			if (preg_match("/([0-9]+)-([0-9]+)-([0-9]+)__([0-9]+)-([0-9]+)-([0-9]+)+/", $file, $matches) !== 1) continue;
 
 			
 			$y = $matches[1];
@@ -255,7 +255,7 @@ class Backup
 
 			if ($date <= $maxDate)
 			{
-				//if (Config::DEBUG == false) unlink($file);
+			    //if (Config::DEBUG == false) unlink($file);
 
 				$res[] = $file;
 			}
