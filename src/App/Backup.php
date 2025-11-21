@@ -15,7 +15,7 @@ use Ifsnop\Mysqldump\Mysqldump;
 
 class Backup 
 {
-    public static function run(string $onlyThisGroups = null)
+    public static function run(?string $onlyThisGroups)
 	{
 		$start = time();
 

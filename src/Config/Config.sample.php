@@ -24,6 +24,8 @@ class Config____Sample
 	// When calling by URL provide this token. ?token=xxx
 	public const URL_TOKEN = 'xxxxxxxxxxxx';
 
+	// Passord for UI
+	public const UI_PASSWORD = 'xxxxxxxxxxxx';
 
 	// Items to Backup
 	public static function groups() {

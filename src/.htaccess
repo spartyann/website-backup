@@ -3,3 +3,16 @@ Deny From All
 <FilesMatch "^backup\.php$">
     Allow From All
 </FilesMatch>
+
+<FilesMatch "^ui\.php$">
+    Allow From All
+</FilesMatch>
+
+<FilesMatch "^api\.php$">
+    Allow From All
+</FilesMatch>
+
+
+<FilesMatch "^.*(\.js|\.css|\.vue|\.eot|\.svg|\.ttf|\.woff|\.woff2|\.less|\.scss|\.map)$">
+	Allow From All
+</FilesMatch>

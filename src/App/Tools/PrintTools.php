@@ -5,6 +5,19 @@ namespace App\Tools;
 
 class PrintTools 
 {
+	private static $cache = '';
+
+	public static function getCache(): string
+	{
+		return self::$cache;
+	}
+
+	private static function appendOutput(string $text)
+	{
+		self::$cache .= $text;
+		if (VERBOSE) echo $text;
+	}
+
 	private static function isCommandLineInterface()
 	{
 		return (php_sapi_name() === 'cli');
@@ -12,37 +25,42 @@ class PrintTools
 
 	public static function title1(string $text)
 	{
-		if (VERBOSE == false) return;
+		$res = '';
 
-		echo NL;
+		$res .=  NL;
 		$line = "===== " . $text . " =====";
-		echo str_repeat('=', strlen($line)) . NL;
-		echo $line . NL;
-		echo str_repeat('=', strlen($line)) . NL;
-		echo NL;
+		$res .=  str_repeat('=', strlen($line)) . NL;
+		$res .=  $line . NL;
+		$res .=  str_repeat('=', strlen($line)) . NL;
+		$res .=  NL;
+
+		self::appendOutput($res);
 	}
 
 	public static function title2(string $text)
 	{
-		if (VERBOSE == false) return;
+		$res = '';
 
-		echo NL;
-		echo "##### " . $text . " #####" . NL . NL;
+		$res .=  NL;
+		$res .=  "##### " . $text . " #####" . NL . NL;
+
+		self::appendOutput($res);
 	}
 
 	public static function title3(string $text)
 	{
-		if (VERBOSE == false) return;
+		$res = '';
+		$res .=  NL;
+		$res .=  "##### " . $text . NL . NL;
 
-		echo NL;
-		echo "##### " . $text . NL . NL;
+		self::appendOutput($res);
 	}
 
 	public static function text(string $text)
 	{
-		if (VERBOSE == false) return;
-
-		echo $text . NL;
+		$res = '';
+		$res .=  $text . NL;
+		self::appendOutput($res);
 	}
 
 }

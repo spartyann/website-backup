@@ -1,0 +1,126 @@
+.win_modal {
+  cursor: auto;
+}
+
+.win_modal .win_modal_bg {
+  background: #0b0b0b;
+}
+
+.win_modal .win_modal_base .win {
+  background: white;
+  color: black;
+}
+
+.win_modal .win {
+  box-shadow: 0 0 2rem 0 #424242;
+}
+
+.win_header {
+  background-color: white !important;
+  font-weight: bold;
+  text-align: left;
+  font-size: 140%;
+  padding: 20px;
+}
+.win_header .modal-btn {
+  margin-top: -0.5rem;
+  margin-left: 0.5rem;
+}
+.win_header .modal-icon {
+  font-size: 2.5rem;
+}
+
+.win_header.big-header {
+  background-color: white !important;
+  padding: 40px;
+  font-size: 150%;
+}
+.win_header.big-header, .win_header.big-header h1 {
+  color: black;
+}
+.win_header.big-header h1 {
+  font-size: 150%;
+  font-weight: bold;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.win_body {
+  overflow-y: auto;
+  overflow-x: auto;
+  max-height: 98vh;
+  background-color: white;
+  color: black;
+  padding: 20px;
+  text-align: left;
+  /*display: flex;
+  flex-direction: column;*/
+}
+
+.win_body.large-body {
+  padding: 40px;
+}
+
+/* Footer */
+.win_body + div:not(:empty) {
+  padding: 20px;
+  text-align: right;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.win_modal .win_modal_bg.fade-enter,
+.win_modal .win_modal_bg.fade-leave-to,
+.win_modal .win_modal_base.fade-enter,
+.win_modal .win_modal_base.fade-leave-to {
+  opacity: 0;
+}
+
+.win_modal .win_modal_bg {
+  opacity: 0.5;
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+
+.win_modal .win_modal_base {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+
+.win_modal .win_modal_base > div {
+  display: table;
+  width: 100%;
+  height: 100%;
+}
+
+.win_modal .win_modal_base > div > div {
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.win_modal .win_modal_base .win {
+  color: black;
+  display: inline-grid;
+  width: 90%;
+}
+
+.win_modal .win {
+  border-radius: 10px;
+}
+.win_modal .win > div:first-child {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+.win_modal .win > div.win_body, .win_modal .win > div.win_footer {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}/*# sourceMappingURL=modale.css.map */
