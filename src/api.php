@@ -3,6 +3,7 @@
 require_once(__DIR__ . '/vendor/autoload.php');
 
 use App\Backup;
+use App\Tools\FileTools;
 use App\Tools\PrintTools;
 use Config\Config;
 
@@ -32,10 +33,15 @@ function sendError(string $response){
 	exit(0);
 }
 
+function apiParam($name, $defaultValue = null){
+	return $_POST[$name] ?? ($_GET[$name] ?? $defaultValue);
+}
 
-$apipwd = $_POST['apipwd'] ?? null;
-$operation = $_POST['operation'] ?? null;
-$group = $_POST['group'] ?? null;
+
+$apipwd = apiParam('apipwd');
+$operation = apiParam('operation');
+$group = apiParam('group');
+$item = apiParam('item');
 
 if ($apipwd != Config::UI_PASSWORD)
 {
@@ -81,6 +87,38 @@ else if ($operation == "run_backup")
 	sendResponse([
 		'log' => $data
 	]);
+}
+else if ($operation == "dump_and_download_db")
+{
+	define("NL", "\n");
+	define("VERBOSE", false);
+
+	$tempDir = FileTools::prepareTempDir();
+	$fileDb = $tempDir . '/dumptemp.sql';
+
+
+	$itemDB = Config::downloadDBApi()[$item] ?? null;
+
+	if ($itemDB == null) sendError("Invalid DB item");
+	
+	$notifMessage = '';
+	Backup::dumpDb($fileDb, Config::downloadDBApi()[$item], $notifMessage);
+
+	if (file_exists($fileDb) == false)
+	{
+		sendError("Dump file not created");
+	}
+
+	header('Content-Description: File Transfer');
+	header('Content-Type: application/sql');
+	header('Content-Disposition: attachment; filename="dump.sql"');
+	header('Expires: 0');
+	header('Cache-Control: must-revalidate');
+	header('Pragma: public');
+	header('Content-Length: ' . filesize($fileDb));
+	readfile($fileDb);
+
+	FileTools::prepareTempDir();
 }
 
 

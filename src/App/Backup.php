@@ -272,6 +272,7 @@ class Backup
 		$mysqlDbname = $item['db_name'];
 		$mysqlUser = $item['user'];
 		$mysqlPwd = $item['pwd'];
+		$mysqlTables = $item['tables'] ?? null;
 
 		if (Config::DB_USE_MYSQLDUMP_CMD)
 		{
@@ -308,10 +309,19 @@ class Backup
 			}
 
 			$cmd .= ' ' . escapeshellarg($mysqlDbname);
+
+			// Tables
+			if ($mysqlTables != null && is_array($mysqlTables))
+			{
+				foreach($mysqlTables as $table)
+				{
+					$cmd .= ' ' . escapeshellarg($table);
+				}
+			}
 			
 			CommandTools::exec($cmd, 'Error on mysqldump: ', $output);
 
-			if (count($output) > 0) $notifMessage .= "\n" . implode("\n", $output);
+			if ($output != null && count($output) > 0) $notifMessage .= "\n" . implode("\n", $output);
 		}
 		else // USE Mysqldump Class
 		{
@@ -320,6 +330,11 @@ class Backup
 				'add-drop-table' => true,
 				'add-drop-trigger' => true,
 			];
+
+			if ($mysqlTables != null && is_array($mysqlTables) && count($mysqlTables) > 0)
+			{
+				$settings['include-tables'] = $mysqlTables;
+			}
 
 			foreach(Config::DB_DUMP_LIB_SETTINGS as $name => $val) $settings[$name] = $val;
 

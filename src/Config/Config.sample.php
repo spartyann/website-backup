@@ -76,6 +76,22 @@ class Config____Sample
 		];
 	}
 
+
+	// Download DB API
+	public static function downloadDBApi() {
+		return [
+			'my_site' => [
+				'type' => 'db',
+				'host' => 'localhost',
+				'port' => 3306,
+				'user' => 'root',
+				'pwd' => '',
+				'db_name' => 'DB1',
+				'tables' => ['table1', 'table2'] // null for all tables
+			],
+		];
+	}
+
 	//
 	// Backup options
 	//
