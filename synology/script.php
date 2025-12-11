@@ -3,12 +3,6 @@
 require_once __DIR__ . '/config.php';
 
 
-$file = __DIR__ . '/dump.sql';
-
-if (file_exists($file)) {
-	unlink($file);
-}
-
 function downloadFileWithCurl($url, $destination) {
     $ch = curl_init();
     
@@ -67,20 +61,58 @@ function importViaMysqlCommand($sqlFile, $host, $user, $pass, $database) {
 
 
 
-if (downloadFileWithCurl(URL, $file) == false){
-	echo "Error downloading file from URL \n";
-	exit(1);
-}
 
-// Utilisation
-if (importViaMysqlCommand(
-    $file,
-    DB_HOST,
-    DB_USER,
-    DB_PWD,
-    DB_DB
-) == false) {
-	echo "Error importing file from URL \n";
-	exit(1);
+foreach (CONF as $conf) {
+	if ($conf['enabled'] === false) continue;
+
+
+
+	if ($conf['type'] === 'dump_sql' ) {
+
+		$file = __DIR__ . '/dump.sql';
+
+		if (file_exists($file)) {
+			unlink($file);
+		}
+
+		if (downloadFileWithCurl($conf['url'], $file) == false){
+			echo "Error downloading file from URL \n";
+			exit(1);
+		}
+
+		if (importViaMysqlCommand(
+			$file,
+			$conf['db_host'],
+			$conf['db_user'],
+			$conf['db_pwd'],
+			$conf['db_db']
+		) == false) {
+			echo "Error importing file from URL \n";
+			exit(1);
+		}
+
+	} else if ($conf['type'] === 'matomo_json' ) {
+
+		$file = __DIR__ . '/dump.json';
+
+		if (file_exists($file)) {
+			unlink($file);
+		}
+
+		if (downloadFileWithCurl($conf['url'], $file) == false){
+			echo "Error downloading file from URL \n";
+			exit(1);
+		}
+
+		file_put_contents($file, json_encode(json_decode(file_get_contents($file)), JSON_PRETTY_PRINT));
+
+
+		// TODO
+
+		
+	} else {
+		echo "Type not managed \n";
+		exit(1);
+	}
 }
 
