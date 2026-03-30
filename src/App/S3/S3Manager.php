@@ -21,6 +21,7 @@ class S3Manager
 				'key' => Config::S3_ACCESS_KEY_ID,
 				'secret' => Config::S3_SECRET_ACCESS_KEY
 			],
+			'use_aws_shared_config_files' => false,
 			// Set the S3 class to use objects.dreamhost.com/bucket
 			// instead of bucket.objects.dreamhost.com
 			'use_path_style_endpoint' => true

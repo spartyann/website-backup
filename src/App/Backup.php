@@ -5,6 +5,7 @@ namespace App;
 use App\Mail\MailDownloader;
 use App\Notifications\DiscordHelper;
 use App\Notifications\SlackHelper;
+use App\Notifications\TelegramHelper;
 use App\S3\S3Manager;
 use App\Tools\CommandTools;
 use App\Tools\FileTools;
@@ -163,6 +164,13 @@ class Backup
 				SlackHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', SlackHelper::escape($notifMessage));
 			}
 
+			// Notify
+			if (Config::NOTIF_TELEGRAM_CHAT_ID != null)
+			{
+				PrintTools::text("Sending Telegram notif");
+				TelegramHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', TelegramHelper::escape($notifMessage));
+			}
+
 		}
 		catch (\Throwable $ex)
 		{
@@ -181,6 +189,13 @@ class Backup
 			if (Config::NOTIF_ERROR_SLACK_WEBHOOK_URL != null)
 			{
 				SlackHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', SlackHelper::escape($msg), Config::NOTIF_ERROR_SLACK_WEBHOOK_URL);
+			}
+
+			if (Config::NOTIF_ERROR_TELEGRAM_CHAT_ID != null)
+			{
+				PrintTools::text("Sending Telegram notif");
+				TelegramHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', TelegramHelper::escape($msg),
+					Config::NOTIF_ERROR_TELEGRAM_CHAT_ID, Config::NOTIF_ERROR_TELEGRAM_TOKEN);
 			}
 
 			if (Config::DEBUG) throw $ex;

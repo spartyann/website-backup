@@ -123,5 +123,11 @@ class Config____Sample
 
 	public const NOTIF_SLACK_WEBHOOK_URL = null;
 	public const NOTIF_ERROR_SLACK_WEBHOOK_URL = null;
+
+
+	public const NOTIF_TELEGRAM_CHAT_ID = null;
+	public const NOTIF_TELEGRAM_TOKEN = null;
+	public const NOTIF_ERROR_TELEGRAM_CHAT_ID = null;
+	public const NOTIF_ERROR_TELEGRAM_TOKEN = null;
 }
 

@@ -31,7 +31,7 @@ class DiscordHelper
 		return $string;
 	}
 
-	public static function sendMessage(string $title, string $msg, string $colorHex = null, string $hookUrl = null)
+	public static function sendMessage(string $title, string $msg, ?string $colorHex = null, ?string $hookUrl = null)
 	{
 		$title = preg_replace('/[^A-Za-z0-9\-\_ ]/', '', $title);
 
