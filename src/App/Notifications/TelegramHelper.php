@@ -7,23 +7,21 @@ class TelegramHelper
 {
 	public static function escape(string $string)
 	{
-		//$string = str_replace('_', '\_', $string);
-		$string = str_replace('*', '\*', $string);
-		$string = str_replace('*', '\*', $string);
-		$string = str_replace('~', '\~', $string);
-		$string = str_replace('`', '\`', $string);
-		$string = str_replace('[', '\[', $string);
-		$string = str_replace(']', '\]', $string);
-		$string = str_replace('(', '\(', $string);
-		$string = str_replace(')', '\)', $string);
-		
-		return $string;
+		//$special = ['\\', '`', '*', '_', '{', '}', '[', ']', '(', ')', '#', '+', '-', '.', '!', '|']; // V2
+		$special = ['*', '_', '`', '[']; // MD V1
+		return str_replace($special, array_map(function($c){return '\\'.$c;}, $special), $string);
 	}
 	
 	public static function ellipsis(string $string, int $max = 300)
 	{
 		if (strlen($string) > $max) return substr($string, 0, $max) . '[...]';
 		return $string;
+	}
+
+	public static function escapeMarkdown($text) {
+		//$special = ['\\', '`', '*', '_', '{', '}', '[', ']', '(', ')', '#', '+', '-', '.', '!', '|']; // V2
+		$special = ['*', '_', '`', '[']; // MD V1
+		return str_replace($special, array_map(function($c){return '\\'.$c;}, $special), $text);
 	}
 
 	public static function sendMessage(string $title, string $msg, ?string $chatId = null, ?string $token = null){
@@ -36,7 +34,7 @@ class TelegramHelper
 		$title = preg_replace('/[^A-Za-z0-9\-\_ ]/', '', $title);
 
 		$title = self::ellipsis($title, 300);
-		$msg = self::ellipsis($msg, 4096 - strlen($title) - 10); // 4096 is the max length of a Telegram message, we keep some margin for the title and formatting
+		$msg = self::ellipsis($msg, 4096 - strlen($title) - 20); // 4096 is the max length of a Telegram message, we keep some margin for the title and formatting
 
 		
 		// L'URL de l'API Telegram
@@ -45,7 +43,7 @@ class TelegramHelper
 		// Les données à envoyer
 		$data = [
 			'chat_id' => $chat_id,
-			'text' => '*' . $title . "* \n\n " . $msg,
+			'text' => '*' . $title . "* \n\n" . $msg,
 			'parse_mode' => 'Markdown', // Permet d'utiliser des balises HTML basiques comme <b>, <i>
 			'disable_web_page_preview' => true // Désactive l'aperçu des liens (optionnel)
 		];
@@ -68,11 +66,11 @@ class TelegramHelper
 		// Gestion des erreurs cURL
 		if(curl_errno($ch)) {
 			$error = curl_error($ch);
-			curl_close($ch);
+			unset($ch);
 			return "Erreur cURL : " . $error;
 		}
 		
-		curl_close($ch);
+		unset($ch);
 		return $response;
 	}
 

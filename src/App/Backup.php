@@ -139,7 +139,7 @@ class Backup
 					S3Manager::put($s3Key, $backupFile);
 					
 					PrintTools::text("done");
-					$notifMessage .= 'Copied to S3: ' . $s3Key;
+					$notifMessage .= 'S3: ' . basename($s3Key);
 				}
 			}
 
@@ -218,7 +218,7 @@ class Backup
 				PrintTools::text("Removing: " . $file);
 				unlink($file);
 				PrintTools::text("done");
-				$notifMessage .= "\nDeleted: $file";
+				$notifMessage .= "\nDeleted: " . basename($file);
 			}
 		}
 
@@ -235,7 +235,7 @@ class Backup
 				PrintTools::text("Removing S3 file: " . $file);
 				S3Manager::delete($file);
 				PrintTools::text("done");
-				$notifMessage .= "\nDeleted S3: $file";
+				$notifMessage .= "\nDeleted S3: " . basename($file);;
 			}
 		}
 	}
