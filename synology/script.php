@@ -16,6 +16,10 @@ function downloadFileWithCurl($url, $destination) {
         CURLOPT_MAXREDIRS => 5,
         CURLOPT_USERAGENT => 'Mozilla/5.0'
     ]);
+
+	curl_setopt($ch, CURLOPT_HTTPHEADER, [
+		'User-Agent: AUTOMATION-Integration/1.0',
+	]);
     
     $file = fopen($destination, 'wb');
     curl_setopt($ch, CURLOPT_FILE, $file);
