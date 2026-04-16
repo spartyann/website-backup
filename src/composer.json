@@ -4,7 +4,7 @@
     "require": {
         "symfony/var-dumper": "^6.2",
         "aws/aws-sdk-php": "^3.271",
-        "ifsnop/mysqldump-php": "^2.12"
+        "druidfi/mysqldump-php": "^2.0"
     },
     "license": "MIT",
     "authors": [
