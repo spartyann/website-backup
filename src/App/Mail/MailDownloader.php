@@ -3,75 +3,103 @@
 namespace App\Mail;
 
 use App\Tools\FileTools;
+use DirectoryTree\ImapEngine\Enums\ImapFetchIdentifier;
+use DirectoryTree\ImapEngine\Exceptions\ImapCommandException;
+use DirectoryTree\ImapEngine\Exceptions\ImapConnectionException;
+use DirectoryTree\ImapEngine\Mailbox;
 
 class MailDownloader 
 {
 
 	public static function downloadMails(
-		string $mailbox,
+		string $host,
+		string $port,
 		string $user,
 		string $password,
-		int $retries = null,
-		array $options = null,
-		array $mailBoxesNames = null,
+		string $encryption,
+		?int $retries,
+		?array $mailBoxesNames,
 		string $mailsSyncDir
 	)
 	{
 		if (is_dir($mailsSyncDir) == false) mkdir($mailsSyncDir);
 
-		$co = \imap_open($mailbox, $user, $password, OP_READONLY, $retries, $options ?? []);
+		//https://imapengine.com/docs/usage/folders
+
+		$mailbox = new Mailbox([
+			'host' => $host,
+			'port' => $port,
+			'username' => $user,
+			'password' => $password,
+			'encryption' => $encryption,
+		]);
+
+		try {
+			$mailbox->connect();
+		} catch (ImapCommandException $e) {
+			throw $e;
+			// Handle authentication failures (invalid credentials).
+		} catch (ImapConnectionException $e) {
+			throw $e;
+			// Handle connection failures (network, server issues).
+		}
+
+		$boxes = [];
+
+		if ($mailBoxesNames == null || count($mailBoxesNames) == 0)
+		{
+			$boxes = $mailbox->folders()->get();
+		}
+		else
+		{
+			foreach ($mailBoxesNames as $mailBoxName)
+			{
+				$box = $mailbox->folders()->find($mailBoxName);
+				if ($box == null) throw new \Exception('Mail Box Not Found: ' . $mailBoxName);
+
+				$boxes[] = $box;
+			}
+		}
+
 		
-		if ($co == false) throw new \Exception("Unable to IMAP login: " . \imap_last_error());
-
-		$mailBoxesDesc = \imap_getmailboxes($co, $mailbox, '*');
-
-		if ($mailBoxesNames == null) $mailBoxesNames =  \imap_list($co, $mailbox, '*');
-		else $mailBoxesNames = array_map(function($item) use($mailbox) { return $mailbox . $item; }, $mailBoxesNames);
-
-		file_put_contents($mailsSyncDir . '/email_boxes.txt', json_encode($mailBoxesDesc, JSON_PRETTY_PRINT));
+		file_put_contents($mailsSyncDir . '/email_boxes.txt', json_encode($boxes, JSON_PRETTY_PRINT));
+		
 
 		$boxDirs = [];
 		$boxDirNames = [];
 
-		foreach ($mailBoxesNames as $box)
+		foreach ($boxes as $box)
 		{
-			\imap_close($co);
-			$co = \imap_open($box, $user, $password, OP_READONLY, $retries, $options ?? []);
-
-			if (1 !== preg_match("/(\{[^\}]+\})(.+)/i", $box, $matches)) throw new \Exception('Invalid Mail Box Name: ' . $box);
-
-			$boxDirName = $matches[2];
+			
+			$boxDirName = $box->name();
 			$boxDir = $mailsSyncDir . '/' . $boxDirName;
 			$boxDirs[] = $boxDir;
 			$boxDirNames[] = $boxDirName;
 
 			if (is_dir($boxDir) == false) mkdir($boxDir);
 
-			// Get Num mails
-			$numMails = \imap_num_msg($co);
+			$messages = $box->messages()->withHeaders()->get();
 
-			// Has mails ?
-			if ($numMails == 0) continue; // NO MAILS
-
-			// Get overview
-			$overviews = \imap_fetch_overview($co, "1:$numMails" );
-
-			file_put_contents($boxDir . '/all_emails.txt', json_encode($overviews, JSON_PRETTY_PRINT));
-
+			
+			
+			file_put_contents($boxDir . '/all_emails.txt', json_encode($messages, JSON_PRETTY_PRINT));
+			
+			//dd($messages);
 			// Get existing Files
 			$existingEmailFiles = array_filter(scandir($boxDir), function($name){ return str_starts_with($name,'email_'); });
 
 			$emailFileNames = [];
 
-			foreach ($overviews as $overview)
+			foreach ($messages as $messageOverview)
 			{
-				$udate = new \DateTime();
-				$udate->setTimestamp($overview->udate);
+				//dd($message);
+				$date = new \DateTime();
+				$date->setTimestamp($messageOverview->date()->getTimestamp());
 
-				$subject = imap_utf8($overview->subject);
+				$subject = $messageOverview->subject();
 				
-				$emailFileName = 'email_' . $overview->uid
-					. '_' . $udate->format('Y-m-d_H-i')
+				$emailFileName = 'email_' . $messageOverview->uid()
+					. '_' . $date->format('Y-m-d_H-i')
 					. '-' . FileTools::cleanupFileChars(substr($subject, 0, 50))
 					. '.eml';
 
@@ -81,13 +109,18 @@ class MailDownloader
 
 				//echo "\nDownload email: " . $subject;
 
-				\imap_savebody($co, $boxDir . "/" . $emailFileName, $overview->msgno);
+				$message = $box->messages()->withHeaders()->withFlags()->withBody()->find($messageOverview->uid(), ImapFetchIdentifier::Uid);
+	
+				$eml = $message->head() . "\r\n" . $message->body();
+
+				file_put_contents($boxDir . "/" . $emailFileName, $eml);
 			}
 
 			foreach ($existingEmailFiles as $fileName)
 			{
 				if (isset($emailFileNames[$fileName]) == false)
 				{
+					echo "\nRemove email file: " . $fileName;
 					unlink($boxDir . "/" . $fileName);
 				}
 			}

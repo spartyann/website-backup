@@ -87,11 +87,12 @@ class Backup
 					PrintTools::text("Backup MAIL: " . $item['user']);
 
 					MailDownloader::downloadMails(
-						$item['mailbox'],
+						$item['host'],
+						$item['port'],
 						$item['user'],
 						$item['password'],
+						$item['encryption'],
 						$item['retries'],
-						$item['options'],
 						$item['mail_boxes'],
 						$item['mails_sync_dir']
 					);
