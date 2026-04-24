@@ -95,7 +95,8 @@ class Backup
 						$item['mail_boxes'],
 						$item['mails_sync_dir'],
 						$item['php_command'] ?? null,
-						$item['optim_mem'] ?? false
+						$item['optim_mem'] ?? false,
+						$item['verbose'] ?? false
 					);
 
 					if ($item['backup_dir'] != null)

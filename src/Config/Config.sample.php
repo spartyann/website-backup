@@ -71,7 +71,8 @@ class Config____Sample
 						//'mail_boxes' => null, //['INBOX', 'Sent'],
 						'mails_sync_dir' => dirname(dirname(__DIR__)) . '/tests/mails',
 						'php_command' => null, // 'php' or '/bin/php8.1' or null to auto detect
-						'optim_mem' => false
+						'optim_mem' => false,
+						'verbose' => false,
 					],
 					
 				]

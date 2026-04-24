@@ -37,10 +37,10 @@ class MailDownloader
 		?array $mailBoxesNames,
 		string $mailsSyncDir,
 		?string $phpCommand,
-		bool $optim_mem = false
+		bool $optim_mem = false,
+		bool $verbose = false
 	)
 	{
-		$verbose = true;
 
 		if (is_dir($mailsSyncDir) == false) mkdir($mailsSyncDir);
 
