@@ -92,9 +92,10 @@ class Backup
 						$item['user'],
 						$item['password'],
 						$item['encryption'],
-						$item['retries'],
 						$item['mail_boxes'],
-						$item['mails_sync_dir']
+						$item['mails_sync_dir'],
+						$item['php_command'] ?? null,
+						$item['optim_mem'] ?? false
 					);
 
 					if ($item['backup_dir'] != null)

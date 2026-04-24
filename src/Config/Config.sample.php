@@ -67,10 +67,11 @@ class Config____Sample
 						'host' => 'imap.example.com',
 						'port' => 993,
 
-						'retries' => 0,
 						'mail_boxes' => ['INBOX', 'Sent'],
 						//'mail_boxes' => null, //['INBOX', 'Sent'],
-						'mails_sync_dir' => dirname(dirname(__DIR__)) . '/tests/mails'
+						'mails_sync_dir' => dirname(dirname(__DIR__)) . '/tests/mails',
+						'php_command' => null, // 'php' or '/bin/php8.1' or null to auto detect
+						'optim_mem' => false
 					],
 					
 				]

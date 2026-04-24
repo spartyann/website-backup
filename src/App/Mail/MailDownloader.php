@@ -2,14 +2,31 @@
 
 namespace App\Mail;
 
+use App\ExceptionWithCustomTrace;
 use App\Tools\FileTools;
 use DirectoryTree\ImapEngine\Enums\ImapFetchIdentifier;
 use DirectoryTree\ImapEngine\Exceptions\ImapCommandException;
 use DirectoryTree\ImapEngine\Exceptions\ImapConnectionException;
 use DirectoryTree\ImapEngine\Mailbox;
-
 class MailDownloader 
 {
+
+	public static function progressBar(int $current, int $total, int $width = 40): void
+	{
+		$percent  = $current / $total;
+		$filled   = (int) round($percent * $width);
+		$empty    = $width - $filled;
+
+		$bar  = str_repeat('█', $filled) . str_repeat('░', $empty);
+		$pct  = str_pad((int)($percent * 100), 3, ' ', STR_PAD_LEFT);
+
+		echo "\r[{$bar}] {$pct}% ({$current}/{$total})";
+
+		if ($current === $total) {
+			echo PHP_EOL;
+		}
+	}
+
 
 	public static function downloadMails(
 		string $host,
@@ -17,127 +34,97 @@ class MailDownloader
 		string $user,
 		string $password,
 		string $encryption,
-		?int $retries,
 		?array $mailBoxesNames,
-		string $mailsSyncDir
+		string $mailsSyncDir,
+		?string $phpCommand,
+		bool $optim_mem = false
 	)
 	{
+		$verbose = true;
+
 		if (is_dir($mailsSyncDir) == false) mkdir($mailsSyncDir);
 
 		//https://imapengine.com/docs/usage/folders
 
-		$mailbox = new Mailbox([
-			'host' => $host,
-			'port' => $port,
-			'username' => $user,
-			'password' => $password,
-			'encryption' => $encryption,
-		]);
+		$args = [];
+		$args[] = $host;
+		$args[] = $port;
+		$args[] = $user;
+		$args[] = $password;
+		$args[] = $encryption;
+		$args[] = json_encode($mailBoxesNames);
+		$args[] = $mailsSyncDir;
+		$args[] = $verbose ? '1' : '0';
+		$args[] = '1'; // Minimum Verbose
 
-		try {
-			$mailbox->connect();
-		} catch (ImapCommandException $e) {
-			throw $e;
-			// Handle authentication failures (invalid credentials).
-		} catch (ImapConnectionException $e) {
-			throw $e;
-			// Handle connection failures (network, server issues).
+		if (PHP_OS_FAMILY === 'Windows') {
+			$args = array_map(function($a) { return str_replace('!', '----EX----', $a); }, $args);
 		}
 
-		$boxes = [];
+		$args = array_map(function($a) { return escapeshellarg($a); }, $args);
 
-		if ($mailBoxesNames == null || count($mailBoxesNames) == 0)
-		{
-			$boxes = $mailbox->folders()->get();
-		}
-		else
-		{
-			foreach ($mailBoxesNames as $mailBoxName)
-			{
-				$box = $mailbox->folders()->find($mailBoxName);
-				if ($box == null) throw new \Exception('Mail Box Not Found: ' . $mailBoxName);
+		$php = $phpCommand ?? PHP_BINARY;
 
-				$boxes[] = $box;
-			}
-		}
-
+		if ($optim_mem) $script = escapeshellarg(__DIR__ . '/WorkerMailBox.php');
+		else $script = escapeshellarg(__DIR__ . '/WorkerMailBoxMessages.php');
 		
-		file_put_contents($mailsSyncDir . '/email_boxes.txt', json_encode($boxes, JSON_PRETTY_PRINT));
-		
+		$command = "{$php} {$script} " . implode(' ', $args);
+		//$res = shell_exec($command);
 
-		$boxDirs = [];
-		$boxDirNames = [];
+		$resStream = self::execStream($command, $verbose, $args);
 
-		foreach ($boxes as $box)
-		{
-			
-			$boxDirName = $box->name();
-			$boxDir = $mailsSyncDir . '/' . $boxDirName;
-			$boxDirs[] = $boxDir;
-			$boxDirNames[] = $boxDirName;
+		if ($resStream !== 0) {
+			echo "Error executing Worker. Exit code: {$resStream}\n";
+			exit(1);
+		}
+	}
 
-			if (is_dir($boxDir) == false) mkdir($boxDir);
 
-			$messages = $box->messages()->withHeaders()->get();
+	private static function execStream(string $command, $verbose = false, array $env = []): int
+	{
+		$handle = popen("{$command} 2>&1", 'r');
 
-			
-			
-			file_put_contents($boxDir . '/all_emails.txt', json_encode($messages, JSON_PRETTY_PRINT));
-			
-			//dd($messages);
-			// Get existing Files
-			$existingEmailFiles = array_filter(scandir($boxDir), function($name){ return str_starts_with($name,'email_'); });
+		if ($handle === false) {
+			throw new \RuntimeException("Impossible d'ouvrir le process : {$command}");
+		}
 
-			$emailFileNames = [];
+		while (!feof($handle)) {
+			$line = fgets($handle);
+			if ($line === false) continue;
 
-			foreach ($messages as $messageOverview)
-			{
-				//dd($message);
-				$date = new \DateTime();
-				$date->setTimestamp($messageOverview->date()->getTimestamp());
+			$data = json_decode(trim($line), true);
 
-				$subject = $messageOverview->subject();
-				
-				$emailFileName = 'email_' . $messageOverview->uid()
-					. '_' . $date->format('Y-m-d_H-i')
-					. '-' . FileTools::cleanupFileChars(substr($subject, 0, 50))
-					. '.eml';
+			// Ligne JSON valide
+			if (json_last_error() === JSON_ERROR_NONE && isset($data['type'])) {
+				if ($data['type'] === 'progress') {
+					if ($verbose) self::progressBar(
+						intval($data['current']),
+						intval($data['total'])
+					);
+				} elseif ($data['type'] === 'log') {
+					if ($verbose) {
+						echo $data['message'] . "\n";
+					}
+				} elseif ($data['type'] === 'exception') {
 
-				$emailFileNames[$emailFileName] = $emailFileName;
+					$ex = ExceptionWithCustomTrace::withTrace(
+						$data['message'],
+						$data['trace'] ?? []
+					);
 
-				if (in_array($emailFileName, $existingEmailFiles)) continue;
-
-				//echo "\nDownload email: " . $subject;
-
-				$message = $box->messages()->withHeaders()->withFlags()->withBody()->find($messageOverview->uid(), ImapFetchIdentifier::Uid);
-	
-				$eml = $message->head() . "\r\n" . $message->body();
-
-				file_put_contents($boxDir . "/" . $emailFileName, $eml);
-			}
-
-			foreach ($existingEmailFiles as $fileName)
-			{
-				if (isset($emailFileNames[$fileName]) == false)
-				{
-					echo "\nRemove email file: " . $fileName;
-					unlink($boxDir . "/" . $fileName);
+					throw $ex;
 				}
+				
+			} else {
+				// Ligne non-JSON (erreur PHP, exception...) → afficher en rouge
+				//echo "\n\033[31m{$line}\033[0m";
+				echo $line;
+				flush(); // force l'affichage immédiat en CLI
 			}
-
 		}
 
-		// Remove deleted folders
-		$existingDirectories = FileTools::getAllSubDirectories($mailsSyncDir);
-
-		foreach ($existingDirectories as $existingDirectory)
-		{
-			// Check if has not be deleted
-			if (is_dir($existingDirectory) == false) continue;
-
-			// Remove not found
-			if (in_array($existingDirectory, $boxDirs) == false) FileTools::removeDir($existingDirectory);
-		}
+		$exitCode = pclose($handle);
+		return $exitCode;
 	}
 
 }
