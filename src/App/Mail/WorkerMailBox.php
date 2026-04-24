@@ -30,6 +30,11 @@ function sendLog(string $message): void
     echo json_encode(['type' => 'log', 'message' => $message]) . "\n";
 }
 
+function sendRes($result): void
+{
+    echo json_encode(['type' => 'result', 'result' => $result]) . "\n";
+}
+
 function sendException(string $message, $trace = []): void
 {
     echo json_encode(['type' => 'exception', 'message' => $message, 'trace' => $trace]) . "\n";
@@ -61,6 +66,7 @@ try {
 						$data['label']
 					),
 					'log' => sendLog($data['message']), // ignorer ou loguer dans un fichier
+					'result' => sendRes($data['result']),
 					'exception' => sendException($data['message'], $data['trace']),
 					default => null,
 				};
@@ -79,7 +85,7 @@ try {
 	if (PHP_OS_FAMILY === 'Windows') {
 		$argv = array_map(function($a) { return str_replace('----EX----', '!', $a); }, $argv);
 	}
-	
+
 	$host = $argv[1];
 	$port = $argv[2];
 	$user = $argv[3];

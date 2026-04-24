@@ -30,6 +30,12 @@ function sendLog(string $message): void
     echo json_encode(['type' => 'log', 'message' => $message]) . "\n";
 }
 
+function sendRes($result): void
+{
+	flush();
+    echo json_encode(['type' => 'result', 'result' => $result]) . "\n";
+}
+
 function sendException(string $message, $trace = []): void
 {
     echo json_encode(['type' => 'exception', 'message' => $message, 'trace' => $trace]) . "\n";
@@ -122,8 +128,8 @@ try {
 
 			if ($messageOverview->date() == null) {
 				if ($verbose) {
-					echo "\nEmail with no date: " . $messageOverview->uid();
-					echo "\nMessage from: " . json_encode($messageOverview->from());
+					echo "\nEmail with no date: " . $messageOverview->uid() . "\n";
+					echo "\nMessage from: " . json_encode($messageOverview->from()) . "\n";
 				}
 				$dateString = 'NO-DATE';
 			} else {
@@ -137,8 +143,8 @@ try {
 			if ($subject === null){
 				$subject = '';
 				if ($verbose) {
-					echo "\nNO SUBJECT in message: " . $messageOverview->uid();
-					echo "\nMessage from: " . json_encode($messageOverview->from());
+					echo "\nNO SUBJECT in message: " . $messageOverview->uid() . "\n";
+					echo "\nMessage from: " . json_encode($messageOverview->from()) . "\n";
 				}
 			}
 			
@@ -177,7 +183,7 @@ try {
 
 			if ($verbose) {
 				progressBar($index + 1, count($messagesToDownload));
-				//echo "\nDownloaded email with ID: " . $uid . " - Subject: " . $subject;
+				//echo "\nDownloaded email with ID: " . $uid . " - Subject: " . $subject . "\n";
 			}
 
 			$message = $box->messages()->withHeaders()->withFlags()->withBody()->find($uid, ImapFetchIdentifier::Uid);
@@ -191,13 +197,23 @@ try {
 			unset($message);
 		}
 
+		if (count($messagesToDownload) > 0) {
+			sendRes($box->name() . ": " . count($messagesToDownload) . " new");
+		}
+		
+		$deletedCount = 0;
 		foreach ($existingEmailFiles as $fileName)
 		{
 			if (isset($emailFileNames[$fileName]) == false)
 			{
-				if ($verbose) echo "\nRemove email file: " . $fileName;
+				if ($verbose) echo "\nRemove email file: " . $fileName . "\n";
 				unlink($boxDir . "/" . $fileName);
+				$deletedCount++;
 			}
+		}
+
+		if ($deletedCount > 0) {
+			sendRes($box->name() . ": " . $deletedCount . " deleted");
 		}
 		
 		unset($box);

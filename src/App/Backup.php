@@ -86,7 +86,7 @@ class Backup
 					
 					PrintTools::text("Backup MAIL: " . $item['user']);
 
-					MailDownloader::downloadMails(
+					$results = MailDownloader::downloadMails(
 						$item['host'],
 						$item['port'],
 						$item['user'],
@@ -98,6 +98,11 @@ class Backup
 						$item['optim_mem'] ?? false,
 						$item['verbose'] ?? false
 					);
+
+					if (count($results) > 0) {
+						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
+						$notifMessage .= "\nMail: " . $item['user'] . "\n- " . implode("\n- ", $results);
+					}
 
 					if ($item['backup_dir'] != null)
 					{

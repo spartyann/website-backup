@@ -73,15 +73,20 @@ class MailDownloader
 
 		$resStream = self::execStream($command, $verbose, $args);
 
-		if ($resStream !== 0) {
+		$result = $resStream[1] ?? null;
+
+		if ($resStream[0] !== 0) {
 			echo "Error executing Worker. Exit code: {$resStream}\n";
 			exit(1);
 		}
+
+		return $result;
 	}
 
 
-	private static function execStream(string $command, $verbose = false, array $env = []): int
+	private static function execStream(string $command, $verbose = false, array $env = []): array
 	{
+		$results = [];
 		$handle = popen("{$command} 2>&1", 'r');
 
 		if ($handle === false) {
@@ -113,6 +118,8 @@ class MailDownloader
 					);
 
 					throw $ex;
+				} elseif ($data['type'] === 'result') {
+					$results[] = $data['result'];
 				}
 				
 			} else {
@@ -124,7 +131,7 @@ class MailDownloader
 		}
 
 		$exitCode = pclose($handle);
-		return $exitCode;
+		return [$exitCode, $results];
 	}
 
 }
