@@ -101,7 +101,7 @@ class Backup
 
 					if (count($results) > 0) {
 						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "\nMail: " . $item['user'] . "\n- " . implode("\n- ", $results);
+						$notifMessage .= "\nMail: " . $item['user'] . "\n- " . implode("\n- ", $results) . "\n";
 					}
 
 					if ($item['backup_dir'] != null)
