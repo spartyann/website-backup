@@ -5,7 +5,8 @@
         "symfony/var-dumper": "^6.2",
         "aws/aws-sdk-php": "^3.271",
         "druidfi/mysqldump-php": "^2.0",
-        "directorytree/imapengine": "^1.24"
+        "directorytree/imapengine": "^1.24",
+        "google/apiclient": "^2.19"
     },
     "license": "MIT",
     "authors": [
@@ -22,5 +23,15 @@
         "classmap": [
 
         ]
+    },
+	"scripts": {
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+    },
+	"extra": {
+        "google/apiclient-services": [
+            "Drive"
+           
+        ]
     }
+	
 }

@@ -76,7 +76,35 @@ class Config____Sample
 					],
 					
 				]
-			]
+			],
+
+			"docs" => [
+				'prefix' => 'docs_',
+				'send_s3' => false,
+				'items' => [
+					[
+						'type' => 'google_drive',
+						'mode' => 'export_all_doc',
+						'types_to_export' => [ 'document', 'spreadsheet', 'presentation' ],
+						'files_sync_dir' => dirname(dirname(__DIR__)) . '/tests/docs', // Local dir to sync with Google Drive
+						'google_auth' => [ // Google API Auth
+							"type" => "service_account",
+							"project_id" => "xxxxxxxx",
+							"private_key_id" => "xxxxxxxxxxxxxx",
+							"private_key" => "xxxxxxxxxxxxxx",
+							"client_email" => "xxxxxxxxxxxxxx",
+							"client_id" => "xxxxxxxxxxxxxx",
+							"auth_uri" => "https://accounts.google.com/o/oauth2/auth",
+							"token_uri" => "xxxxxxxxxxxxxx",
+							"auth_provider_x509_cert_url" => "https://www.googleapis.com/oauth2/v1/certs",
+							"client_x509_cert_url" => "xxxxxxxxxxxxxx",
+							"universe_domain" => "googleapis.com"
+						],
+
+						'backup_dir' => null, // dir in ZIP. Keep Null to not include in ZIP
+					],
+				]
+			],
 
 		];
 	}

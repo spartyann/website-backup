@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Google\DriveDownloader;
 use App\Mail\MailDownloader;
 use App\Notifications\DiscordHelper;
 use App\Notifications\SlackHelper;
@@ -109,6 +110,30 @@ class Backup
 						$staticDirs[] = [
 							'backup_dir' => $item['backup_dir'],
 							'dir' => $item['mails_sync_dir']
+						];
+					}
+				}
+				else if ($item['type'] == 'google_drive'){
+
+					PrintTools::text("Backup GOOGLE DRIVE: ");
+
+					$results = DriveDownloader::download(
+						$item['mode'],
+						$item['types_to_export'],
+						$item['files_sync_dir'],
+						$item['google_auth']
+					);
+
+					if (count($results) > 0) {
+						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
+						$notifMessage .= "\nGoogle Drive:\n- " . implode("\n- ", $results) . "\n";
+					}
+
+					if ($item['backup_dir'] != null)
+					{
+						$staticDirs[] = [
+							'backup_dir' => $item['backup_dir'],
+							'dir' => $item['files_sync_dir']
 						];
 					}
 				}

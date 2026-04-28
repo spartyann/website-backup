@@ -25,11 +25,72 @@ class FileTools
 
 		return $res;
 	}
+
+	public static function transliterate(string $str): string {
+		$map = [
+			// Français
+			'à' => 'a',  'â' => 'a',  'á' => 'a',  'ä' => 'ae',
+			'è' => 'e',  'ê' => 'e',  'é' => 'e',  'ë' => 'e',
+			'î' => 'i',  'ï' => 'i',  'í' => 'i',  'ì' => 'i',
+			'ô' => 'o',  'ö' => 'oe', 'ó' => 'o',  'ò' => 'o',  'õ' => 'o',
+			'ù' => 'u',  'û' => 'u',  'ü' => 'ue', 'ú' => 'u',
+			'ç' => 'c',
+			'ñ' => 'n',
+			'ý' => 'y',  'ÿ' => 'y',
+			'œ' => 'oe', 'æ' => 'ae',
+			'ß' => 'ss',
+
+			// Majuscules
+			'À' => 'A',  'Â' => 'A',  'Á' => 'A',  'Ä' => 'Ae',
+			'È' => 'E',  'Ê' => 'E',  'É' => 'E',  'Ë' => 'E',
+			'Î' => 'I',  'Ï' => 'I',  'Í' => 'I',  'Ì' => 'I',
+			'Ô' => 'O',  'Ö' => 'Oe', 'Ó' => 'O',  'Ò' => 'O',  'Õ' => 'O',
+			'Ù' => 'U',  'Û' => 'U',  'Ü' => 'Ue', 'Ú' => 'U',
+			'Ç' => 'C',
+			'Ñ' => 'N',
+			'Ý' => 'Y',
+			'Œ' => 'Oe', 'Æ' => 'Ae',
+
+			// Polonais / Tchèque / Slovaque / Croate
+			'ą' => 'a',  'ć' => 'c',  'ę' => 'e',  'ł' => 'l',
+			'ń' => 'n',  'ś' => 's',  'ź' => 'z',  'ż' => 'z',
+			'č' => 'c',  'ď' => 'd',  'ě' => 'e',  'ň' => 'n',
+			'ř' => 'r',  'š' => 's',  'ť' => 't',  'ž' => 'z',
+			'Ą' => 'A',  'Ć' => 'C',  'Ę' => 'E',  'Ł' => 'L',
+			'Ń' => 'N',  'Ś' => 'S',  'Ź' => 'Z',  'Ż' => 'Z',
+			'Č' => 'C',  'Š' => 'S',  'Ž' => 'Z',  'Ř' => 'R',
+
+			// Nordique / Scandinave
+			'å' => 'a',  'ø' => 'o',  'þ' => 'th', 'ð' => 'd',
+			'Å' => 'A',  'Ø' => 'O',  'Þ' => 'Th', 'Ð' => 'D',
+
+			// Ponctuation typographique → ASCII
+			'\''  => "'", '\u2019' => "'",           // apostrophes courbes
+			'"'   => '"', '"'      => '"',            // guillemets courbes
+			'–'   => '-', '—'      => '-',            // tirets longs
+			'…'   => '.',                              // points de suspension
+			'«'   => '"', '»'      => '"',            // guillemets français
+			'°'   => 'deg',
+			'€'   => 'EUR',
+			'£'   => 'GBP',
+			'©'   => '(c)',
+			'®'   => '(r)',
+			'™'   => '(tm)',
+			'×'   => 'x',
+			'÷'   => '-',
+			'½'   => '1-2',
+			'¼'   => '1-4',
+			'¾'   => '3-4',
+		];
+
+		return strtr($str, $map);
+	}
 	
 	public static function cleanupFileChars($string)
 	{
+		$string = self::transliterate($string);
 		$string = str_replace(' ', '-', $string);
-		$string = preg_replace('/[^A-Za-z0-9\-\_]/', '', $string);
+		$string = preg_replace('/[^A-Za-z0-9\-\_+]/', '', $string); // Attention garder - et + pour les timeZones de dates
 		$string = preg_replace('/-+/', '-', $string);
 		return $string;
 	}
