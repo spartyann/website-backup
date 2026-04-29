@@ -7,12 +7,6 @@ use App\Tools\FileTools;
 use App\Tools\PrintTools;
 use Config\Config;
 
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-	define("IS_WIN", true);
-} else {
-	define("IS_WIN", false);
-}
-
 function sendResponse($response){
 	header('Content-Type: application/json');
 
@@ -77,9 +71,6 @@ else if ($operation == "load")
 else if ($operation == "run_backup")
 {
 
-	define("NL", "\n");
-	define("VERBOSE", false);
-
 	Backup::run($group);
 
 	$data = PrintTools::getCache();
@@ -90,8 +81,6 @@ else if ($operation == "run_backup")
 }
 else if ($operation == "dump_and_download_db")
 {
-	define("NL", "\n");
-	define("VERBOSE", false);
 
 	$tempDir = FileTools::prepareTempDir();
 	$fileDb = $tempDir . '/dumptemp.sql';

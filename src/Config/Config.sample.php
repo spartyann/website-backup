@@ -9,6 +9,15 @@ namespace Config;
 class Config____Sample
 {
 	public const DEBUG = true;
+	private static bool $VERBOSE = false; // Default value
+
+	public static function VERBOSE() : bool{
+		return self::$VERBOSE;
+	}
+
+	public static function DEFINE_VERBOSE(bool $verbose){
+		return self::$VERBOSE = $verbose;
+	}
 
 	//
 	// Backup objects

@@ -136,7 +136,7 @@ class DriveDownloader
 
 			file_put_contents($exportPath, $response->getBody()->getContents());
 
-			$res[] = 'Get: ' . $file['name'];
+			$res[] = 'Get ' . $ext . ': ' . $file['name'];
 
 			if ($existingFile) {
 				unlink($existingFile['path']);
@@ -148,7 +148,7 @@ class DriveDownloader
 			if (!isset($allFiles[$existingFile['id']])) {
 				//echo "File deleted: " . $existingFile['name'] . "\n";
 				unlink($existingFile['path']);
-				$res[] = 'Del: ' . $existingFile['name'];
+				$res[] = 'Del .' . $existingFile['ext'] . ': ' . $existingFile['name'];
 			}
 		}
 

@@ -102,7 +102,7 @@ class Backup
 
 					if (count($results) > 0) {
 						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "\nMail: " . $item['user'] . "\n- " . implode("\n- ", $results) . "\n";
+						$notifMessage .= "\nMail: " . $item['user'] . "\n- " . implode("\n- ", $results) . "\n\n";
 					}
 
 					if ($item['backup_dir'] != null)
@@ -125,10 +125,14 @@ class Backup
 					);
 
 					if (count($results) > 0) {
+						$email = $item['google_auth']['client_email'] ?? 'no_email@no_email.com';
+						$email = substr($email, 0, strpos($email, '@'));
+
 						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "\nGoogle Drive:\n- " . implode("\n- ", $results) . "\n";
+						$notifMessage .= "\nGoogle Drive: $email\n- " . implode("\n- ", $results) . "\n";
 					}
 
+					
 					if ($item['backup_dir'] != null)
 					{
 						$staticDirs[] = [

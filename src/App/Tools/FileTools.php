@@ -99,8 +99,8 @@ class FileTools
 	{
 		if (is_dir($dir))
 		{
-			if (IS_WIN == false) shell_exec("rm -rf " . escapeshellarg($dir)); // Delete Tmp dir
-			if (IS_WIN) shell_exec("rmdir /s /q " . escapeshellarg($dir)); // Delete Tmp dir
+			if (Tools::isWindows() == false) shell_exec("rm -rf " . escapeshellarg($dir)); // Delete Tmp dir
+			if (Tools::isWindows()) shell_exec("rmdir /s /q " . escapeshellarg($dir)); // Delete Tmp dir
 		}
 	}
 

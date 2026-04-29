@@ -2,10 +2,17 @@
 
 namespace App\Tools;
 
+use Config\Config;
 
 class PrintTools 
 {
 	private static $cache = '';
+	private static $NL = "\n";
+	
+	public static function defineNewLine(string $nl)
+	{
+		self::$NL = $nl;
+	}
 
 	public static function getCache(): string
 	{
@@ -15,24 +22,19 @@ class PrintTools
 	private static function appendOutput(string $text)
 	{
 		self::$cache .= $text;
-		if (VERBOSE) echo $text;
-	}
-
-	private static function isCommandLineInterface()
-	{
-		return (php_sapi_name() === 'cli');
+		if (Config::VERBOSE()) echo $text;
 	}
 
 	public static function title1(string $text)
 	{
 		$res = '';
 
-		$res .=  NL;
+		$res .=  self::$NL;
 		$line = "===== " . $text . " =====";
-		$res .=  str_repeat('=', strlen($line)) . NL;
-		$res .=  $line . NL;
-		$res .=  str_repeat('=', strlen($line)) . NL;
-		$res .=  NL;
+		$res .=  str_repeat('=', strlen($line)) . self::$NL;
+		$res .=  $line . self::$NL;
+		$res .=  str_repeat('=', strlen($line)) . self::$NL;
+		$res .=  self::$NL;
 
 		self::appendOutput($res);
 	}
@@ -41,8 +43,8 @@ class PrintTools
 	{
 		$res = '';
 
-		$res .=  NL;
-		$res .=  "##### " . $text . " #####" . NL . NL;
+		$res .=  self::$NL;
+		$res .=  "##### " . $text . " #####" . self::$NL . self::$NL;
 
 		self::appendOutput($res);
 	}
@@ -50,8 +52,8 @@ class PrintTools
 	public static function title3(string $text)
 	{
 		$res = '';
-		$res .=  NL;
-		$res .=  "##### " . $text . NL . NL;
+		$res .=  self::$NL;
+		$res .=  "##### " . $text . self::$NL . self::$NL;
 
 		self::appendOutput($res);
 	}
@@ -59,7 +61,7 @@ class PrintTools
 	public static function text(string $text)
 	{
 		$res = '';
-		$res .=  $text . NL;
+		$res .=  $text . self::$NL;
 		self::appendOutput($res);
 	}
 
