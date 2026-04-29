@@ -30,7 +30,7 @@ class Backup
 			if ($onlyThisGroups != null && in_array($groupName, $onlyThisGroupsList) == false) continue;
 
 			PrintTools::title1("Backup Group: " . $groupName);
-			self::backupGroup($group['prefix'] ?? 'backup_', $group['suffix'] ?? '', $group['items'], $group['send_s3'] ?? true);
+			self::backupGroup($groupName, $group['prefix'] ?? 'backup_', $group['suffix'] ?? '', $group['items'], $group['send_s3'] ?? true);
 		}
 
 		$end = time();
@@ -41,7 +41,7 @@ class Backup
 
 	}
 
-	private static function backupGroup(string $backfilePrefix, string $backfileSuffix, array $itemsToBackup, bool $groupSendS3 = false)
+	private static function backupGroup(string $groupName, string $backfilePrefix, string $backfileSuffix, array $itemsToBackup, bool $groupSendS3 = false)
 	{
 		$start = time();
 		try
@@ -102,7 +102,9 @@ class Backup
 
 					if (count($results) > 0) {
 						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "\nMail: " . $item['user'] . "\n- " . implode("\n- ", $results) . "\n\n";
+						$notifMessage .= "Mail: " . $item['user'] . "\n- " . implode("\n- ", $results) . "\n\n";
+					} else {
+						$notifMessage .= "Mail: " . $item['user'] . "\n- No change\n\n";
 					}
 
 					if ($item['backup_dir'] != null)
@@ -124,15 +126,16 @@ class Backup
 						$item['google_auth']
 					);
 
-					if (count($results) > 0) {
-						$email = $item['google_auth']['client_email'] ?? 'no_email@no_email.com';
-						$email = substr($email, 0, strpos($email, '@'));
+					$email = $item['google_auth']['client_email'] ?? 'no_email@no_email.com';
+					$email = substr($email, 0, strpos($email, '@'));
 
+					if (count($results) > 0) {
 						PrintTools::text("Results for: " .json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "\nGoogle Drive: $email\n- " . implode("\n- ", $results) . "\n";
+						$notifMessage .= "Google Drive: $email\n- " . implode("\n- ", $results) . "\n\n";
+					} else {
+						$notifMessage .= "Google Drive: $email\n- No change\n\n";
 					}
 
-					
 					if ($item['backup_dir'] != null)
 					{
 						$staticDirs[] = [
@@ -187,25 +190,28 @@ class Backup
 			$end = time();
 			PrintTools::text("Backup COMPLETE in " . ($end - $start) . "s !");
 
+			$notifTitle = Config::NOTIF_TITLE ?? 'Backup completed';
+			$notifTitle .= " ($groupName)";
+
 			// Notify
 			if (Config::NOTIF_DISCORD_WEBHOOK_URL != null)
 			{
 				PrintTools::text("Sending discord notif");
-				DiscordHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', DiscordHelper::escape($notifMessage), '#00ff00');
+				DiscordHelper::sendMessage($notifTitle, DiscordHelper::escape($notifMessage), '#00ff00');
 			}
 
 			// Notify
 			if (Config::NOTIF_SLACK_WEBHOOK_URL != null)
 			{
 				PrintTools::text("Sending Slack notif");
-				SlackHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', SlackHelper::escape($notifMessage));
+				SlackHelper::sendMessage($notifTitle, SlackHelper::escape($notifMessage));
 			}
 
 			// Notify
 			if (Config::NOTIF_TELEGRAM_CHAT_ID != null)
 			{
 				PrintTools::text("Sending Telegram notif");
-				TelegramHelper::sendMessage(Config::NOTIF_TITLE ?? 'Backup completed', TelegramHelper::escape($notifMessage));
+				TelegramHelper::sendMessage($notifTitle, TelegramHelper::escape($notifMessage));
 			}
 
 		}
@@ -217,21 +223,24 @@ class Backup
 			PrintTools::title2("ERROR");
 			PrintTools::text($msg);
 
+			$notifTitle = Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR';
+			$notifTitle .= " ($groupName)";
+
 			// Notify
 			if (Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL != null)
 			{
-				DiscordHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', DiscordHelper::escape($msg), '#ff0000', Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL);
+				DiscordHelper::sendMessage($notifTitle, DiscordHelper::escape($msg), '#ff0000', Config::NOTIF_ERROR_DISCORD_WEBHOOK_URL);
 			}
 
 			if (Config::NOTIF_ERROR_SLACK_WEBHOOK_URL != null)
 			{
-				SlackHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', SlackHelper::escape($msg), Config::NOTIF_ERROR_SLACK_WEBHOOK_URL);
+				SlackHelper::sendMessage($notifTitle, SlackHelper::escape($msg), Config::NOTIF_ERROR_SLACK_WEBHOOK_URL);
 			}
 
 			if (Config::NOTIF_ERROR_TELEGRAM_CHAT_ID != null)
 			{
 				PrintTools::text("Sending Telegram notif");
-				TelegramHelper::sendMessage(Config::NOTIF_ERROR_TITLE ?? 'Backup ERROR', TelegramHelper::escape($msg),
+				TelegramHelper::sendMessage($notifTitle, TelegramHelper::escape($msg),
 					Config::NOTIF_ERROR_TELEGRAM_CHAT_ID, Config::NOTIF_ERROR_TELEGRAM_TOKEN);
 			}
 
