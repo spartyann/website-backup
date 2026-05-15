@@ -8,7 +8,7 @@ Ce projet permet d'effectuer des sauvegardes de sites PHP/MySql/MariaDB. Il est 
 ## Fonctionnalités
 
 - Dump de la base de données en deux options:
-	- Avec la libraire **[Ifsnop\Mysqldump\Mysqldump]** (toutes ses options 
+	- Avec la libraire **[druidfi\mysqldump-php]** (toutes ses options 
 	sont configurables)
 	- Avec la commande **mysqldump** (toutes ses options sont configurables)
 - Compression du dump avec les fichiers du site:
@@ -30,7 +30,8 @@ Pour une execution automatique, paramétrez un cron job (consultez la documentat
 
 ## Lancement
 
-Soit via CLI
+### Via CLI
+
 ```
 php .\backup.php
 
@@ -38,7 +39,9 @@ php .\backup.php
 php .\backup.php -g <Groupes de sauvegarde à lancer> --verbose
 ```
 
-Ou via URL: `https://<YOUR_URL>/backup.php?token=<token>`
+### Via URL
+
+URL: `https://<YOUR_URL>/backup.php?token=<token>`
 
 Avec les options: `https://<YOUR_URL>/backup.php?token=<token>&g=<Groupes de sauvegarde à lancer>&verbose=1`
 
@@ -55,6 +58,22 @@ php .\backup.php -g group1,group2 --verbose
 URL: https://<YOUR_URL>/backup.php?token=xxxxx&g=group1,group2&verbose=1
 ```
 
+### Via Interface
+
+URL: `https://<YOUR_URL>/ui.php`
+
+Utilisez le mot de passe défini en Config.
+
+### Via API
+
+L'API est utilisée par l'interface ui.php.
+
+Mais vous pouvez utiliser une option "dump_and_download_db" qui vous permet de télécharger le SQL de tables configurées dans les options de Config.
+
+URL: `https://<YOUR_URL>/api.php?apipwd=<PWD>&operation=dump_and_download_db`
+
+PWD = Mot de passe UI.
+
 ## Paramètres du fichier Config.php
 
 Liste des paramètres:
@@ -65,7 +84,9 @@ Liste des paramètres:
 | DB_MYSQLDUMP_VARIABLES | ```[ 'triggers' => true ]``` | Utiliser la commande:  _**mysqldump --help**_ pour voir toutes les variables en option |	
 | DB_DUMP_LIB_SETTINGS | ```[ 'add-locks' => false ]``` | **Dump Settings** pour [Ifsnop\Mysqldump\Mysqldump] |
 | URL_TOKEN | Token d'authentification | Utilisé lors des appel via URL. Ajouter dans l'URL `&token=<valeur de votre token>` |
-| groups() | Voir Config.sample.php | Liste des éléments à sauvegarder. (DB, Fichiers et Email) |
+| UI_PASSWORD | Mot de passe d'authentification pour le UI | Utilisé lors pour la connexion à ui.php |
+| groups() | Voir Config.sample.php | Liste des éléments à sauvegarder. (DB, Fichiers, Email, Sync Google Docs) |
+| downloadDBApi() | Permet un export de DB | Via API permet de récupérer le SQL de tables spécifiques. Voir section API. |
 | COMPRESSION_TYPE | 'tar' \| 'phpzip' | Format de compression. Utiliser **tar** pour conserver les permissions de fichiers |
 | localStorageBackupDir() | ```return dirname(dirname(__DIR__)) . '/backups';``` | Répertoire contenant toutes les sauvegardes. **Ne pas mettre de / à la fin** |
 | LOCAL_BACKUP_RETENTION | 'P1M' \| null | Temps de rétention des sauvegardes locales. Au format accepté par [\DateInterval] |
@@ -82,6 +103,11 @@ Liste des paramètres:
 | NOTIF_ERROR_DISCORD_WEBHOOK_URL | null | Webhook du salon Discord pour les erreurs |
 | NOTIF_SLACK_WEBHOOK_URL | null | Webhook du salon Slack |
 | NOTIF_ERROR_SLACK_WEBHOOK_URL | null | Webhook du salon Slack pour les erreurs |
+| NOTIF_TELEGRAM_CHAT_ID | null | Webhook du bot Telegram - ChatId |
+| NOTIF_TELEGRAM_TOKEN | null | Webhook du bot Telegram - Token |
+| NOTIF_ERROR_TELEGRAM_CHAT_ID | null | Webhook du bot Telegram pour les erreurs - ChatId |
+| NOTIF_ERROR_TELEGRAM_TOKEN | null | Webhook du bot Telegram pour les erreurs - Token |
+
 
 ## Restauration
 
@@ -97,7 +123,7 @@ tar --preserve-permissions -xf "<file>"
 
 
 
-[Ifsnop\Mysqldump\Mysqldump]: https://github.com/ifsnop/mysqldump-php
+[druidfi\mysqldump-php]: https://github.com/druidfi/mysqldump-php
 [\DateInterval]: https://www.php.net/manual/fr/class.dateinterval.php
 [AWS S3]: https://aws.amazon.com/fr/s3/
 [Minio]: https://min.io/

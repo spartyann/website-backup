@@ -28,7 +28,7 @@ class Config____Sample
 	public const DB_MYSQLDUMP_VARIABLES = [
 		'triggers' => 'TRUE'
 	]; // Use command:  [ mysqldump --help ] to see all variables options
-	public const DB_DUMP_LIB_SETTINGS = []; // Dump Settings for Ifsnop\Mysqldump\Mysqldump
+	public const DB_DUMP_LIB_SETTINGS = []; // Dump Settings for druidfi/mysqldump-php
 
 	// When calling by URL provide this token. ?token=xxx
 	public const URL_TOKEN = 'xxxxxxxxxxxx';
@@ -96,7 +96,8 @@ class Config____Sample
 						'mode' => 'export_all_doc',
 						'types_to_export' => [ 'document', 'spreadsheet', 'presentation' ],
 						'files_sync_dir' => dirname(dirname(__DIR__)) . '/tests/docs', // Local dir to sync with Google Drive
-						'google_auth' => [ // Google API Auth
+						'google_auth' => [ // Google API Auth.
+							// Utilisez le Google Cloud Console pour créer un Service Account.
 							"type" => "service_account",
 							"project_id" => "xxxxxxxx",
 							"private_key_id" => "xxxxxxxxxxxxxx",
