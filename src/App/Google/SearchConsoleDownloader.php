@@ -16,13 +16,16 @@ class SearchConsoleDownloader
 		string $google_token_php_file,
 		string $siteUrl,
 		array $searchTypes,
+		int $daysBefore,
 		?array $destDB = null
 	) : array
 	{
 		
 		$res = [];
 
-		$dateStart = date('Y-m-d', strtotime('-30 days'));
+		$daysBefore = max($daysBefore, 4);
+
+		$dateStart = date('Y-m-d', strtotime('-' . $daysBefore . ' days'));
 		$dateEnd   = date('Y-m-d', strtotime('-3 days')); // GSC a ~3 jours de délai
 		$rowLimit  = 25000; // Max par requête API
 

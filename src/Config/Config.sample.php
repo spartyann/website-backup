@@ -123,6 +123,7 @@ class Config____Sample
 						'type' => 'google_gsc_download',
 						'site' => "", // 'https://www.votre-site.fr/'; // Ou sc-domain:votre-site.fr
 						'search_types' => ["web"], // ['web', 'image', 'video', 'news']
+						'days_before' => 15, // Nombre de jours avant le jour courant à télécharger.
 						'dest_db' => [ // Les données sont placées dans une table
 							'host' => 'localhost',
 							'port' => 3306,

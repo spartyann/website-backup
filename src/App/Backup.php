@@ -154,6 +154,7 @@ class Backup
 						$item['google_token_php_file'],
 						$item['site'],
 						$item['search_types'],
+						$item['days_before'],
 						$item['dest_db'] ?? null,
 					);
 
