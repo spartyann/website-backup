@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Google\DriveDownloader;
+use App\Google\SearchConsoleDownloader;
 use App\Mail\MailDownloader;
 use App\Notifications\DiscordHelper;
 use App\Notifications\SlackHelper;
@@ -143,6 +144,26 @@ class Backup
 							'dir' => $item['files_sync_dir']
 						];
 					}
+				}
+				else if ($item['type'] == 'google_gsc_download'){
+
+					PrintTools::text("Backup GOOGLE Search Console: ");
+
+					$results = SearchConsoleDownloader::download(
+						$item['google_oauth_client_file'],	
+						$item['google_token_php_file'],
+						$item['site'],
+						$item['search_types'],
+						$item['dest_db'] ?? null,
+					);
+
+					if (count($results) > 0) {
+						PrintTools::text("Results for: " . json_encode($results, JSON_PRETTY_PRINT));
+						$notifMessage .= "Google Search Console:\n- " . implode("\n- ", $results) . "\n\n";
+					} else {
+						$notifMessage .= "Google Search Console:\n- No change\n\n";
+					}
+						
 				}
 				else throw new \Exception("Invalid item Type: [$item[type]]");
 			}

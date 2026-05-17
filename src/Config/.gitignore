@@ -1,4 +1,4 @@
 *
 !.gitignore
-Config.sample.php
-
+!Config.sample.php
+!get_google_token.php

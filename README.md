@@ -85,7 +85,7 @@ Liste des paramètres:
 | DB_DUMP_LIB_SETTINGS | ```[ 'add-locks' => false ]``` | **Dump Settings** pour [Ifsnop\Mysqldump\Mysqldump] |
 | URL_TOKEN | Token d'authentification | Utilisé lors des appel via URL. Ajouter dans l'URL `&token=<valeur de votre token>` |
 | UI_PASSWORD | Mot de passe d'authentification pour le UI | Utilisé lors pour la connexion à ui.php |
-| groups() | Voir Config.sample.php | Liste des éléments à sauvegarder. (DB, Fichiers, Email, Sync Google Docs) |
+| groups() | Voir Config.sample.php | Liste des éléments à sauvegarder. (DB, Fichiers, Email, Sync Google Docs, Google Search Console keywords) |
 | downloadDBApi() | Permet un export de DB | Via API permet de récupérer le SQL de tables spécifiques. Voir section API. |
 | COMPRESSION_TYPE | 'tar' \| 'phpzip' | Format de compression. Utiliser **tar** pour conserver les permissions de fichiers |
 | localStorageBackupDir() | ```return dirname(dirname(__DIR__)) . '/backups';``` | Répertoire contenant toutes les sauvegardes. **Ne pas mettre de / à la fin** |

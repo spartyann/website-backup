@@ -115,7 +115,33 @@ class Config____Sample
 					],
 				]
 			],
+			"google_search_console" => [
+				'prefix' => 'gsc_',
+				'send_s3' => false,
+				'items' => [
+					[
+						'type' => 'google_gsc_download',
+						'site' => "", // 'https://www.votre-site.fr/'; // Ou sc-domain:votre-site.fr
+						'search_types' => ["web"], // ['web', 'image', 'video', 'news']
+						'dest_db' => [ // Les données sont placées dans une table
+							'host' => 'localhost',
+							'port' => 3306,
+							'user' => 'root',
+							'pwd' => '',
+							'db_name' => 'DB1',
+							'table_name' => 'gsc_keywords'
+						],
+						// Google API Auth.
+						// Utilisez le script get_google_token.php pour obtenir les info du token
+						// Puis transformez le fichier Json en PHP qui "return [...];"
+						'google_token_php_file' => __DIR__ . "/credentials/token.php",
+						'google_oauth_client_file' => __DIR__ . "/credentials/oauth-client.php",
+						
+						'backup_dir' => null, // dir in ZIP. Keep Null to not include in ZIP
+					],
 
+				]
+			],
 		];
 	}
 

@@ -29,8 +29,9 @@
     },
 	"extra": {
         "google/apiclient-services": [
-            "Drive"
-           
+            "Drive",
+           	"SearchConsole",
+			"Webmasters"
         ]
     }
 	
