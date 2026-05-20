@@ -52,7 +52,26 @@ class Config____Sample
 						'user' => 'root',
 						'pwd' => '',
 						'db_name' => 'DB1',
-						'file_name' => 'DB1.sql' // Name file in ZIP
+						'file_name' => 'DB1.sql', // Name file in ZIP
+						'settings' => [
+							// Settings for https://github.com/druidfi/mysqldump-php
+							/*
+							'add-drop-table' => true,
+							'if-not-exists' => true,
+							'add-locks' => true,
+							'add-drop-database' => false,
+							'single-transaction' => true,
+							'lock-tables' => false,
+							'extended-insert' => true,
+							'disable-foreign-keys-check' => true,*/
+
+							// Or command  mysqldump --help to see all variables options
+
+							/*
+							'routines' => true,
+							'add-drop-table' => true,
+							*/
+						]
 					],
 					[
 						'type' => 'dir',
@@ -157,7 +176,26 @@ class Config____Sample
 				'user' => 'root',
 				'pwd' => '',
 				'db_name' => 'DB1',
-				'tables' => ['table1', 'table2'] // null for all tables
+				'tables' => ['table1', 'table2'], // null for all tables
+				'settings' => [
+					// Settings for https://github.com/druidfi/mysqldump-php
+					/*
+					'add-drop-table' => true,
+					'if-not-exists' => true,
+					'add-locks' => true,
+					'add-drop-database' => false,
+					'single-transaction' => true,
+					'lock-tables' => false,
+					'extended-insert' => true,
+					'disable-foreign-keys-check' => true,*/
+
+					// Or command  mysqldump --help to see all variables options
+
+					/*
+					'routines' => true,
+					'add-drop-table' => true,
+					*/
+				]
 			],
 		];
 	}

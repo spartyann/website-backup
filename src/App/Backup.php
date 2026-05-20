@@ -356,6 +356,7 @@ class Backup
 		$mysqlUser = $item['user'];
 		$mysqlPwd = $item['pwd'];
 		$mysqlTables = $item['tables'] ?? null;
+		$settings = $item['settings'] ?? [];
 
 		if (Config::DB_USE_MYSQLDUMP_CMD)
 		{
@@ -363,14 +364,14 @@ class Backup
 			// --add-drop-trigger
 			// mysql --user="$MARIADB_USER" --host="$MARIADB_HOST" --password="$MARIADB_PASSWORD" "$MARIADB_DB" < "$MARIADB_FILE"
 
-			$cmdOptions = [
+			$cmdOptions = array_merge([
 				'routines' => true,
 				'add-drop-table' => true,
 				'host' => $mysqlHost,
 				'user' => $mysqlUser,
 				'password' => $mysqlPwd,
 				'port' => $mysqlPort
-			];
+			], $settings);
 
 			// Override
 			foreach(Config::DB_MYSQLDUMP_VARIABLES as $name => $val) $cmdOptions[$name] = $val;
@@ -408,11 +409,11 @@ class Backup
 		}
 		else // USE Mysqldump Class
 		{
-			$settings = [
+			$settings = array_merge([
 				'add-drop-database' => false,
 				'add-drop-table' => true,
 				'add-drop-trigger' => true,
-			];
+			], $settings);
 
 			if ($mysqlTables != null && is_array($mysqlTables) && count($mysqlTables) > 0)
 			{
