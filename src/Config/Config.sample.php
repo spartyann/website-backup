@@ -56,6 +56,8 @@ class Config____Sample
 						'settings' => [
 							// Settings for https://github.com/druidfi/mysqldump-php
 							/*
+							'routines' => true, // Proc stock
+							'events' => true, // evènement planifiés
 							'add-drop-table' => true,
 							'if-not-exists' => true,
 							'add-locks' => true,

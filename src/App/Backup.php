@@ -410,6 +410,7 @@ class Backup
 		else // USE Mysqldump Class
 		{
 			$settings = array_merge([
+				'routines' => true, // Proc stock
 				'add-drop-database' => false,
 				'add-drop-table' => true,
 				'add-drop-trigger' => true,
