@@ -67,6 +67,23 @@ else if ($operation == "load")
 
 	$res['groups'] = $groups;
 
+	$taskGroups = [];
+	foreach (Config::tasks() as $gKey => $tasks)
+	{
+		$items = [];
+		foreach ($tasks as $t)
+		{
+			$items[] = [
+				'name' => $t['name'] ?? '',
+				'task' => $t['task'] ?? '',
+				'integrity_type' => $t['integrity_type'] ?? null,
+			];
+		}
+		$taskGroups[] = [ 'name' => $gKey, 'items' => $items ];
+	}
+
+	$res['taskGroups'] = $taskGroups;
+
 	sendResponse($res);
 }
 else if ($operation == "run_backup")
