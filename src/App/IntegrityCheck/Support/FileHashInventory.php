@@ -40,6 +40,29 @@ class FileHashInventory
 		];
 	}
 
+	// Hash uniquement les chemins fournis (relatifs à $rootDir), sans scanner le reste de l'arborescence.
+	// Utile quand on connaît déjà la liste exacte des fichiers attendus (ex: mapping issu du manifeste d'une extension).
+	public static function buildForPaths(string $rootDir, array $relPaths): array
+	{
+		$root = FileTools::cleanAndCompleteDirPath(realpath($rootDir) ?: $rootDir);
+
+		$files = [];
+		foreach ($relPaths as $relPath)
+		{
+			$fullPath = $root . ltrim($relPath, '/');
+			if (is_file($fullPath) == false) continue;
+
+			$files[$relPath] = hash_file('sha256', $fullPath);
+		}
+
+		return [
+			'built_at' => date('c'),
+			'algo' => 'sha256',
+			'root' => $root,
+			'files' => $files,
+		];
+	}
+
 	private static function isIgnored(string $relPath, array $ignoredFiles, array $ignoredFolders): bool
 	{
 		foreach ($ignoredFiles as $file)

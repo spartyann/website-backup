@@ -44,23 +44,68 @@ class JoomlaChecker
 			$task['ignored_folders'] ?? []
 		);
 
-		$result_strings = FileHashInventory::formatDiffStrings($diff);
+		// Les extensions vérifiées en détail par JoomlaExtensionsChecker ne doivent pas aussi remonter comme
+		// added_folder/missing_folder générique côté noyau (sinon la même extension apparaît deux fois : une fois
+		// en bruit générique, une fois en détail précis). On calcule d'abord la liste des dossiers déjà couverts.
+		$extResult = null;
+		$covered = [];
+		if ($task['check_extensions'] ?? false)
+		{
+			$extResult = JoomlaExtensionsChecker::check($task, $tmpDir);
+			$covered = $extResult['covered_folders'];
+		}
+
+		$added = self::excludeCoveredPaths($diff['added'], $covered);
+		$addedFolders = self::excludeCoveredPaths($diff['added_folders'], $covered);
+		$updated = $diff['updated'];
+		$missing = self::excludeCoveredPaths($diff['missing'], $covered);
+		$missingFolders = self::excludeCoveredPaths($diff['missing_folders'], $covered);
+
+		$result_strings = FileHashInventory::formatDiffStrings([
+			'added' => $added, 'added_folders' => $addedFolders,
+			'updated' => $updated,
+			'missing' => $missing, 'missing_folders' => $missingFolders,
+		]);
 		array_unshift($result_strings, "Version Joomla détectée : $version");
+
+		if ($extResult !== null)
+		{
+			$result_strings = array_merge($result_strings, $extResult['result_strings']);
+			$added = array_merge($added, $extResult['added_files']);
+			$addedFolders = array_merge($addedFolders, $extResult['added_folders']);
+			$updated = array_merge($updated, $extResult['updated_files']);
+			$missing = array_merge($missing, $extResult['missing_files']);
+			$missingFolders = array_merge($missingFolders, $extResult['missing_folders']);
+		}
 
 		// Seuls les fichiers modifiés (hash différent) sont un signal fort de compromission.
 		// added/missing sont attendus (configuration.php, uploads dans images/media, installation/ supprimé...) et se filtrent via ignored_files/ignored_folders si trop bruyants.
-		$result = count($diff['updated']) === 0 ? 'OK' : 'KO';
+		$result = count($updated) === 0 ? 'OK' : 'KO';
 
 		return [
 			'result' => $result,
 			'result_strings' => $result_strings,
-			'added_files' => $diff['added'],
-			'added_folders' => $diff['added_folders'],
-			'updated_files' => $diff['updated'],
-			'missing_files' => $diff['missing'],
-			'missing_folders' => $diff['missing_folders'],
+			'added_files' => $added,
+			'added_folders' => $addedFolders,
+			'updated_files' => $updated,
+			'missing_files' => $missing,
+			'missing_folders' => $missingFolders,
 			'database_items_found' => []
 		];
+	}
+
+	// Retire de $paths tout chemin égal à, ou situé sous, l'un des dossiers de $coveredFolders
+	private static function excludeCoveredPaths(array $paths, array $coveredFolders): array
+	{
+		if (count($coveredFolders) === 0) return $paths;
+
+		return array_values(array_filter($paths, function($path) use ($coveredFolders) {
+			foreach ($coveredFolders as $folder)
+			{
+				if ($path === $folder || str_starts_with($path, $folder . '/')) return false;
+			}
+			return true;
+		}));
 	}
 
 	private static function errorResult(string $message): array

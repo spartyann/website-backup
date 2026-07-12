@@ -238,7 +238,30 @@ class Config____Sample
 					'joomla_last_inventory_files' => __DIR__ . '/inventory_site_1.json',
 					// Dossier contenant les fichiers d'inventaire sources de Joomla et des composants et plug_in installé
 					// Dossier temporaire utilisé pour par exemple télécharger l'archive originale de Joomla, générer l'inventaire Hashé de sources originelles.
-					'joomla_plg_inventory_folder' => __DIR__ . '/integrity_cache', 
+					'joomla_plg_inventory_folder' => __DIR__ . '/integrity_cache',
+
+					'db_table_prefix' => 'jos_', // Préfixe des tables Joomla (ex: 'jos_', 'j_', ...)
+
+					// Vérification des fichiers de chaque extension tierce (plugins/composants/modules/...), en plus du noyau.
+					// Coûteux (téléchargements multiples) : désactivé par défaut.
+					'check_extensions' => false,
+					'check_extension_types' => [
+						'component' => true,
+						'module' => true,
+						'plugin' => true,
+						'template' => true,
+						'library' => true,
+					],
+					'extensions_ignore' => [], // element à exclure explicitement
+
+					// Zips officiels déposés manuellement ({element}.zip), prioritaires sur la résolution automatique via Update Site
+					'extensions_manual_archives_folder' => __DIR__ . '/integrity_cache/manual_extensions',
+
+					// Query string additionnelle (clé API/licence) pour certaines extensions, si pas déjà dans
+					// #__update_sites.extra_query (renseignée par Joomla si la licence est configurée dans l'admin).
+					'extensions_extra_query_overrides' => [
+						// 'com_exemple' => 'key=XXXX',
+					],
 
 					// ******* Cas integrity_type=database *******
 					'db_ignored_tables' => [], // Tables à ignorer
