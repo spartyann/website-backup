@@ -45,7 +45,7 @@ class SlackHelper
 		
 		$response = curl_exec( $ch );
 
-		curl_close( $ch );
+		unset( $ch );
 	}
 
 }

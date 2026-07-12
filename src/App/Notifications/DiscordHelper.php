@@ -62,7 +62,7 @@ class DiscordHelper
 		$response = curl_exec( $ch );
 		// If you need to debug, or find out why you can't send message uncomment line below, and execute script.
 		// echo $response;
-		curl_close( $ch );
+		unset( $ch );
 
 	}
 
