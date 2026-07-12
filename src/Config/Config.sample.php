@@ -261,6 +261,28 @@ class Config____Sample
 					// Fichier contenant la liste des Hash de tous les fichiers
 					// C'est sur cette base que la vérification d'intyégrité est faite
 					'generic_inventory_files' => __DIR__ . '/inventory_site_1.json',
+				],
+				[
+					'name' => 'Nom de la tâche',
+					'task' => 'vulnerabilities_check_joomla',
+
+					// DB associée au site Joomla
+					'db_host' => 'localhost',
+					'db_port' => 3306,
+					'db_user' => 'root',
+					'db_pwd' => '',
+					'db_name' => 'DB1',
+					'db_table_prefix' => 'jos_', // Préfixe des tables Joomla (ex: 'jos_', 'j_', ...)
+
+					// Cache local du flux VEL (extensions.joomla.org), pour éviter de le re-télécharger à chaque exécution
+					'vel_cache_file' => __DIR__ . '/integrity_cache/vel_feed.json',
+					'vel_cache_ttl_hours' => 24,
+
+					// Liste de surveillance que vous maintenez vous-même : extensions dont vous connaissez une version vulnérable
+					// (CVE lue sur un blog, annonce éditeur, etc.). Comparé à la version installée réelle (fiable, contrairement au flux VEL).
+					'known_vulnerable_extensions' => [
+						// [ 'element' => 'com_exemple', 'below_version' => '1.2.3', 'note' => 'CVE-xxxx-xxxxx - injection SQL' ],
+					],
 				]
 			]
 		];

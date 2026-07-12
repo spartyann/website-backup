@@ -5,6 +5,7 @@ namespace App\IntegrityCheck;
 use App\IntegrityCheck\Database\DatabaseChecker;
 use App\IntegrityCheck\Generic\GenericChecker;
 use App\IntegrityCheck\Joomla\JoomlaChecker;
+use App\IntegrityCheck\Joomla\JoomlaVulnerabilityChecker;
 use Exception;
 
 class IntegrityChecker
@@ -33,6 +34,11 @@ class IntegrityChecker
 	public static function buildInventory(array $task, string $tmpDir)
 	{
 		return GenericChecker::buildInventory($task, $tmpDir);
+	}
+
+	public static function checkVulnerabilities(array $task, string $tmpDir): array
+	{
+		return JoomlaVulnerabilityChecker::check($task, $tmpDir);
 	}
 
 

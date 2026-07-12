@@ -2,6 +2,7 @@
 
 namespace App\IntegrityCheck\Database;
 
+use App\IntegrityCheck\Support\DbConnector;
 use PDO;
 
 class DatabaseChecker
@@ -26,7 +27,7 @@ class DatabaseChecker
 			];
 		}
 
-		$pdo = self::connect($task);
+		$pdo = DbConnector::connect($task);
 		$dbName = $task['db_name'];
 		$ignoredTables = $task['db_ignored_tables'] ?? [];
 		$ignoredLines = $task['db_ignored_lines'] ?? [];
@@ -70,16 +71,6 @@ class DatabaseChecker
 			'missing_folders' => [],
 			'database_items_found' => $database_items_found
 		];
-	}
-
-	private static function connect(array $task): PDO
-	{
-		$dsn = "mysql:host={$task['db_host']};port={$task['db_port']};dbname={$task['db_name']};charset=utf8mb4";
-
-		return new PDO($dsn, $task['db_user'], $task['db_pwd'], [
-			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-			PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-		]);
 	}
 
 	// Retourne [ table => [colonne texte, ...] ] pour les tables non ignorées

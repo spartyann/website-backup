@@ -72,12 +72,26 @@ class Tasks
 				{
 					$taskName = $task['name'];
 					$results = IntegrityChecker::buildInventory($task, $tmpDir);
-					
+
 					if (count($results) > 0) {
 						PrintTools::text("Results for: " . json_encode($results, JSON_PRETTY_PRINT));
 						$notifMessage .= "Inventory: $taskName\n- " . implode("\n- ", $results) . "\n\n";
 					} else {
 						$notifMessage .= "Inventory: $taskName\n- Nothing\n\n";
+					}
+				}
+				else if ($task['task'] == 'vulnerabilities_check_joomla')
+				{
+					$taskName = $task['name'];
+					$resultData = IntegrityChecker::checkVulnerabilities($task, $tmpDir);
+
+					$results = $resultData['result_strings'];
+
+					if (count($results) > 0) {
+						PrintTools::text("Results for $taskName: " . json_encode($results, JSON_PRETTY_PRINT));
+						$notifMessage .= "Vulnerabilities: $taskName\n- " . implode("\n- ", $results) . "\n\n";
+					} else {
+						$notifMessage .= "Vulnerabilities: $taskName\n- Nothing\n\n";
 					}
 				}
 				else {
