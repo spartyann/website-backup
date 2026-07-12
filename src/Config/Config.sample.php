@@ -218,6 +218,10 @@ class Config____Sample
 					'ignored_files' => [], // Liste des fichiers à ignorer (chemins relatifs par rapport à 'folder_root')
 					'ignored_folders' => [], // Liste des dossiers à ignorer (chemins relatifs par rapport à 'folder_root')
 
+					// Cas integrity_type=generic|joomla : un dossier entièrement ajouté/disparu contenant au moins ce nombre de fichiers
+					// est regroupé en une seule entrée added_folders/missing_folders au lieu de lister chaque fichier individuellement.
+					'folder_group_min_files' => 2,
+
 					// DB associée au site
 					'db_host' => 'localhost',
 					'db_port' => 3306,

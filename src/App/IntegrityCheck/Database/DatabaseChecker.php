@@ -18,8 +18,10 @@ class DatabaseChecker
 				'result' => 'OK',
 				'result_strings' => [ "Aucun mot-clé ou regex dangereux configuré (db_dangerous_words / db_dangerous_regex) - rien à vérifier." ],
 				'added_files' => [],
+				'added_folders' => [],
 				'updated_files' => [],
 				'missing_files' => [],
+				'missing_folders' => [],
 				'database_items_found' => []
 			];
 		}
@@ -62,8 +64,10 @@ class DatabaseChecker
 			'result' => $result,
 			'result_strings' => $result_strings,
 			'added_files' => [],
+			'added_folders' => [],
 			'updated_files' => [],
 			'missing_files' => [],
+			'missing_folders' => [],
 			'database_items_found' => $database_items_found
 		];
 	}

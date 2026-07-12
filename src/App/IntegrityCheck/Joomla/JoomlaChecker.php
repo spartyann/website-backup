@@ -36,7 +36,13 @@ class JoomlaChecker
 			$task['ignored_folders'] ?? []
 		);
 
-		$diff = FileHashInventory::diff($pristine['files'], $current['files']);
+		$diff = FileHashInventory::diff(
+			$pristine['files'],
+			$current['files'],
+			$task['folder_group_min_files'] ?? 2,
+			$task['ignored_files'] ?? [],
+			$task['ignored_folders'] ?? []
+		);
 
 		$result_strings = FileHashInventory::formatDiffStrings($diff);
 		array_unshift($result_strings, "Version Joomla détectée : $version");
@@ -49,8 +55,10 @@ class JoomlaChecker
 			'result' => $result,
 			'result_strings' => $result_strings,
 			'added_files' => $diff['added'],
+			'added_folders' => $diff['added_folders'],
 			'updated_files' => $diff['updated'],
 			'missing_files' => $diff['missing'],
+			'missing_folders' => $diff['missing_folders'],
 			'database_items_found' => []
 		];
 	}
@@ -61,8 +69,10 @@ class JoomlaChecker
 			'result' => 'KO',
 			'result_strings' => [ $message ],
 			'added_files' => [],
+			'added_folders' => [],
 			'updated_files' => [],
 			'missing_files' => [],
+			'missing_folders' => [],
 			'database_items_found' => []
 		];
 	}
