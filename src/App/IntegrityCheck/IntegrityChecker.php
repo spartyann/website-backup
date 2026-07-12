@@ -2,68 +2,37 @@
 
 namespace App\IntegrityCheck;
 
-use App\ExceptionWithCustomTrace;
-use App\Tools\FileTools;
-use DateTime;
+use App\IntegrityCheck\Database\DatabaseChecker;
+use App\IntegrityCheck\Generic\GenericChecker;
+use App\IntegrityCheck\Joomla\JoomlaChecker;
+use Exception;
 
-class IntegrityChecker 
+class IntegrityChecker
 {
 
 	public static function check(array $task, string $tmpDir) : array
 	{
-		/* Liste de string pour affichage de résultat. Exemple:
-			[ "New files:", "- file1", "- file2", "modified:", "- file1", "- file2" .... ]
-		*/
-		$result_strings = ["sdf"]; 
-		
-		$added_files = []; // nouveaux fichiers ajoutés aux sites
-		$updated_files = []; // fichiers modifiés
-		$missing_files = []; // fichiers manquants
-		$result = ''; // OK|KO
-
-		$database_items_found = []; // liste des lignes par Tables potentiellement compromises. 
-
-		// $task est la même chose quand dans Config.php
+		// $task est la même chose que dans Config.php
 
 		if ($task['integrity_type'] == 'database')
 		{
-			// Code de vérification ICI
+			return DatabaseChecker::check($task, $tmpDir);
 		}
 		else if ($task['integrity_type'] == 'joomla')
 		{
-			// Code de vérification ICI
+			return JoomlaChecker::check($task, $tmpDir);
 		}
 		else if ($task['integrity_type'] == 'generic')
 		{
-			// Code de vérification ICI
+			return GenericChecker::check($task, $tmpDir);
 		}
 
-
-		return [
-			'result' => $result, // 
-			'result_strings' => $result_strings,
-			
-			'added_files' => $added_files,
-			'updated_files' => $updated_files,
-			'missing_files' => $missing_files,
-
-			'database_items_found' => $database_items_found
-		];
+		throw new Exception("Invalid integrity_type: " . $task['integrity_type']);
 	}
 
 	public static function buildInventory(array $task, string $tmpDir)
 	{
-
-		$folder_root = $task['folder_root'];
-
-		$ignored_files = $task['ignored_files'];
-		$ignored_folders = $task['ignored_folders'];
-
-		$generic_inventory_files = $task['generic_inventory_files'];
-
-
-		return ["Build OK"];
-		// Code ici pour construire le fichier d'inventaire  $generic_inventory_files
+		return GenericChecker::buildInventory($task, $tmpDir);
 	}
 
 
