@@ -56,10 +56,12 @@ class Tasks
 				if ($task['task'] == 'integrity_check')
 				{
 					$taskName = $task['name'];
-					$results = IntegrityChecker::check($task, $tmpDir);
+					$resultData = IntegrityChecker::check($task, $tmpDir);
+
+					$results = $resultData['result_strings'];
 
 					if (count($results) > 0) {
-						PrintTools::text("Results for: " . json_encode($results, JSON_PRETTY_PRINT));
+						PrintTools::text("Results for $taskName: " . json_encode($results, JSON_PRETTY_PRINT));
 						$notifMessage .= "Integrity: $taskName\n- " . implode("\n- ", $results) . "\n\n";
 					} else {
 						$notifMessage .= "Integrity: $taskName\n- Nothing\n\n";

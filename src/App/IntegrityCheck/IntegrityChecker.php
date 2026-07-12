@@ -14,7 +14,7 @@ class IntegrityChecker
 		/* Liste de string pour affichage de résultat. Exemple:
 			[ "New files:", "- file1", "- file2", "modified:", "- file1", "- file2" .... ]
 		*/
-		$result_strings = []; 
+		$result_strings = ["sdf"]; 
 		
 		$added_files = []; // nouveaux fichiers ajoutés aux sites
 		$updated_files = []; // fichiers modifiés
