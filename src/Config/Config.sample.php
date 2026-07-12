@@ -202,6 +202,51 @@ class Config____Sample
 		];
 	}
 
+
+	// Task Config
+	public static function tasks() {
+		return [
+			'group_1' => [
+				[
+					'name' => 'Nom de la tâche',
+					'task' => 'integrity_check', // integrity_check seule option dispo
+					'integrity_type' => 'joomla', // Type d'intégrité à vérifier:  database|joomla|generic
+
+					// Si vérification de dossiers
+					'folder_root' => dirname(__DIR__ , 2) . '/tests/site_test', // Racine du dossier à vérifier. Ou racine du site Joomla
+
+					'ignored_files' => [], // Liste des fichiers à ignorer (chemins relatifs par rapport à 'folder_root')
+					'ignored_folders' => [], // Liste des dossiers à ignorer (chemins relatifs par rapport à 'folder_root')
+
+					// DB associée au site
+					'db_host' => 'localhost',
+					'db_port' => 3306,
+					'db_user' => 'root',
+					'db_pwd' => '',
+					'db_name' => 'DB1',
+
+					// ******* Cas integrity_type=generic *******
+					// Fichier contenant la liste des Hash de tous les fichiers
+					// C'est sur cette base que la vérification d'intyégrité est faite
+					'generic_inventory_files' => __DIR__ . '/inventory_site_1.json',
+					
+					// ******* Cas integrity_type = joomla *******
+					'joomla_last_inventory_files' => __DIR__ . '/inventory_site_1.json',
+					// Dossier contenant les fichiers d'inventaire sources de Joomla et des composants et plug_in installé
+					// Dossier temporaire utilisé pour par exemple télécharger l'archive originale de Joomla, générer l'inventaire Hashé de sources originelles.
+					'joomla_plg_inventory_folder' => __DIR__ . '/integrity_cache', 
+
+					// ******* Cas integrity_type=database *******
+					'db_ignored_tables' => [], // Tables à ignorer
+					'db_ignored_lines' => [], // Ligne à ignorer Exemple: [ 'table1' => ['PK1', 'PK2'] ]
+
+					'db_dangerous_words' => [], // Mots dangereux à rechercher
+					'db_dangerous_regex' => [], // Regex Mariadb à rechercher
+				]
+			]
+		];
+	}
+
 	//
 	// Backup options
 	//

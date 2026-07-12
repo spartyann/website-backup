@@ -3,6 +3,7 @@
 require_once(__DIR__ . '/vendor/autoload.php');
 
 use App\Backup;
+use App\Tasks;
 use App\Tools\FileTools;
 use App\Tools\PrintTools;
 use Config\Config;
@@ -70,7 +71,6 @@ else if ($operation == "load")
 }
 else if ($operation == "run_backup")
 {
-
 	Backup::run($group);
 
 	$data = PrintTools::getCache();
@@ -108,6 +108,16 @@ else if ($operation == "dump_and_download_db")
 	readfile($fileDb);
 
 	FileTools::prepareTempDir();
+}
+else if ($operation == "run_tasks")
+{
+	Tasks::run($group);
+
+	$data = PrintTools::getCache();
+
+	sendResponse([
+		'log' => $data
+	]);
 }
 
 

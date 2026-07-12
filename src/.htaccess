@@ -4,6 +4,10 @@ Deny From All
     Allow From All
 </FilesMatch>
 
+<FilesMatch "^tasks\.php$">
+    Allow From All
+</FilesMatch>
+
 <FilesMatch "^ui\.php$">
     Allow From All
 </FilesMatch>
