@@ -41,7 +41,7 @@ class ExtensionReference
 			$zip->extractTo($extractDir);
 			$zip->close();
 
-			$manifestFile = ExtensionManifestParser::findManifestFile($extractDir);
+			$manifestFile = ExtensionManifestParser::findManifestFile($extractDir, $element);
 			if ($manifestFile === null)
 			{
 				PrintTools::text("Extension $element : manifeste introuvable dans l'archive, ignorée.");

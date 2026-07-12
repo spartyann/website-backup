@@ -13,19 +13,45 @@ use SimpleXMLElement;
 class ExtensionManifestParser
 {
 
-	// Trouve le fichier manifeste XML à la racine d'une archive extraite (l'installeur Joomla n'impose pas de nom de fichier fixe)
-	public static function findManifestFile(string $extractedDir): ?string
+	// Trouve le fichier manifeste XML principal à la racine d'une archive extraite (l'installeur Joomla n'impose pas de
+	// nom de fichier fixe). Certaines archives contiennent plusieurs XML "<extension ...>" à la racine (ex: un
+	// sous-installeur embarqué) : on privilégie celui dont le nom ou le tag <element> correspond à $element recherché,
+	// plutôt que de prendre le premier trouvé au hasard.
+	public static function findManifestFile(string $extractedDir, string $element): ?string
 	{
+		// Une archive contenant un dossier "packages/" à la racine embarque plusieurs sous-extensions installées
+		// via un script PHP personnalisé (pas un simple manifeste <files> à parser, ex: certains paquets "package"
+		// qui bundlent un plugin compagnon au même niveau racine que les vrais sous-zips à installer) : notre parseur
+		// ne sait pas dérouler ce cas, mieux vaut ignorer proprement l'extension que produire une référence fausse.
+		if (is_dir(rtrim($extractedDir, '/\\') . '/packages')) return null;
+
+		$candidates = [];
 		foreach (glob(rtrim($extractedDir, '/\\') . '/*.xml') ?: [] as $file)
 		{
 			$content = @file_get_contents($file, false, null, 0, 4096);
 			if ($content !== false && preg_match('/<extension\s/i', $content) === 1)
 			{
-				return $file;
+				$candidates[] = $file;
 			}
 		}
 
-		return null;
+		if (count($candidates) === 0) return null;
+		if (count($candidates) === 1) return $candidates[0];
+
+		$elementShort = preg_replace('/^(com|mod|plg|tpl|pkg|lib)_/', '', $element);
+		foreach ($candidates as $file)
+		{
+			$base = strtolower(pathinfo($file, PATHINFO_FILENAME));
+			if ($base === strtolower($element) || $base === strtolower($elementShort)) return $file;
+		}
+
+		foreach ($candidates as $file)
+		{
+			$xml = @simplexml_load_file($file);
+			if ($xml !== false && isset($xml->element) && (string)$xml->element === $element) return $file;
+		}
+
+		return $candidates[0]; // dernier recours : le premier trouvé
 	}
 
 	// Retourne [ siteRelativePath => zipRelativePath ]
@@ -44,6 +70,13 @@ class ExtensionManifestParser
 		$siteBase = self::siteBasePath($type, $element, $folder, $isAdminExtension);
 
 		$map = [];
+
+		// Le fichier manifeste lui-même est toujours copié par l'installeur Joomla dans le dossier de destination
+		// de l'extension, même s'il n'apparaît jamais explicitement dans les blocs <files> du manifeste (comportement
+		// implicite de l'installeur). Pour un composant, cette copie va toujours côté admin ; pour les autres types,
+		// dans l'unique dossier de l'extension (déjà résolu ci-dessus selon client_id).
+		$manifestDestBase = $type === 'component' ? self::siteBasePath($type, $element, $folder, true) : $siteBase;
+		$map[$manifestDestBase . '/' . basename($manifestFile)] = basename($manifestFile);
 
 		// Bloc <files> principal (site) + <administration><files> (admin)
 		if (isset($xml->files))

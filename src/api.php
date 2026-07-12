@@ -32,11 +32,40 @@ function apiParam($name, $defaultValue = null){
 	return $_POST[$name] ?? ($_GET[$name] ?? $defaultValue);
 }
 
+// Résout $relativePath par rapport à $folderRoot et vérifie qu'il ne s'en échappe pas (path traversal).
+// Retourne le chemin absolu réel si valide, ou null sinon.
+function resolveSafePath(string $folderRoot, string $relativePath): ?string {
+	$root = realpath($folderRoot);
+	if ($root === false) return null;
+	$root = str_replace('\\', '/', $root);
+
+	$relativePath = trim(str_replace('\\', '/', $relativePath), '/');
+	if ($relativePath === '') return null; // interdit de cibler la racine du site elle-même
+
+	$target = realpath($root . '/' . $relativePath);
+	if ($target === false) return null; // n'existe pas
+
+	$target = str_replace('\\', '/', $target);
+	if ($target !== $root && str_starts_with($target, $root . '/') == false) return null; // hors du dossier autorisé
+
+	return $target;
+}
+
+function findTask(string $groupName, string $taskName): ?array {
+	$tasks = Config::tasks()[$groupName] ?? null;
+	if ($tasks === null) return null;
+
+	foreach ($tasks as $t) if (($t['name'] ?? null) === $taskName) return $t;
+
+	return null;
+}
+
 
 $apipwd = apiParam('apipwd');
 $operation = apiParam('operation');
 $group = apiParam('group');
 $item = apiParam('item');
+$taskName = apiParam('task_name');
 
 if ($apipwd != Config::UI_PASSWORD)
 {
@@ -135,6 +164,47 @@ else if ($operation == "run_tasks")
 	sendResponse([
 		'log' => $data
 	]);
+}
+else if ($operation == "run_single_task")
+{
+	try
+	{
+		$result = Tasks::runSingleTask($group, $taskName);
+	}
+	catch (\Throwable $ex)
+	{
+		sendError($ex->getMessage());
+	}
+
+	sendResponse([
+		'result' => $result
+	]);
+}
+else if ($operation == "delete_item")
+{
+	$path = apiParam('path');
+	$type = apiParam('type'); // 'file' | 'folder'
+
+	$task = findTask($group, $taskName);
+	if ($task == null) sendError("Tâche introuvable");
+	if (empty($task['folder_root'])) sendError("Cette tâche n'a pas de dossier associé");
+	if ($path == null || $path == '') sendError("Chemin manquant");
+
+	$safePath = resolveSafePath($task['folder_root'], $path);
+	if ($safePath == null) sendError("Chemin invalide ou introuvable");
+
+	if ($type == 'folder')
+	{
+		if (is_dir($safePath) == false) sendError("Dossier introuvable");
+		FileTools::removeDir($safePath);
+	}
+	else
+	{
+		if (is_file($safePath) == false) sendError("Fichier introuvable");
+		unlink($safePath);
+	}
+
+	sendResponse("Supprimé");
 }
 
 

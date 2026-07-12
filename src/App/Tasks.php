@@ -43,6 +43,42 @@ class Tasks
 
 	}
 
+	// Trouve puis exécute une tâche isolée (hors notifications) : utilisé par l'UI pour lancer/afficher
+	// le résultat d'une seule tâche sans devoir exécuter tout son groupe.
+	public static function runSingleTask(string $groupName, string $taskName): array
+	{
+		$tasks = Config::tasks()[$groupName] ?? null;
+		if ($tasks === null) throw new Exception("Groupe introuvable: $groupName");
+
+		$task = null;
+		foreach ($tasks as $t) if ($t['name'] === $taskName) { $task = $t; break; }
+		if ($task === null) throw new Exception("Tâche introuvable: $taskName");
+
+		$tmpDir = FileTools::prepareTempDir();
+
+		return self::runTask($task, $tmpDir);
+	}
+
+	private static function runTask(array $task, string $tmpDir): array
+	{
+		if ($task['task'] == 'integrity_check')
+		{
+			return IntegrityChecker::check($task, $tmpDir);
+		}
+		else if ($task['task'] == 'integrity_build_inventory')
+		{
+			return [ 'result_strings' => IntegrityChecker::buildInventory($task, $tmpDir) ];
+		}
+		else if ($task['task'] == 'vulnerabilities_check_joomla')
+		{
+			return IntegrityChecker::checkVulnerabilities($task, $tmpDir);
+		}
+		else
+		{
+			throw new \Exception("Invalid item Task: " . $task['task']);
+		}
+	}
+
 	private static function taskGroup(string $groupName, array $tasks)
 	{
 		$start = time();
@@ -53,49 +89,17 @@ class Tasks
 
 			foreach($tasks as $task) {
 
-				if ($task['task'] == 'integrity_check')
-				{
-					$taskName = $task['name'];
-					$resultData = IntegrityChecker::check($task, $tmpDir);
+				$taskName = $task['name'];
+				$resultData = self::runTask($task, $tmpDir);
+				$results = $resultData['result_strings'];
 
-					$results = $resultData['result_strings'];
+				$label = $task['task'] == 'integrity_build_inventory' ? 'Inventory' : ($task['task'] == 'vulnerabilities_check_joomla' ? 'Vulnerabilities' : 'Integrity');
 
-					if (count($results) > 0) {
-						PrintTools::text("Results for $taskName: " . json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "Integrity: $taskName\n- " . implode("\n- ", $results) . "\n\n";
-					} else {
-						$notifMessage .= "Integrity: $taskName\n- Nothing\n\n";
-					}
-
-				}
-				else if ($task['task'] == 'integrity_build_inventory')
-				{
-					$taskName = $task['name'];
-					$results = IntegrityChecker::buildInventory($task, $tmpDir);
-
-					if (count($results) > 0) {
-						PrintTools::text("Results for: " . json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "Inventory: $taskName\n- " . implode("\n- ", $results) . "\n\n";
-					} else {
-						$notifMessage .= "Inventory: $taskName\n- Nothing\n\n";
-					}
-				}
-				else if ($task['task'] == 'vulnerabilities_check_joomla')
-				{
-					$taskName = $task['name'];
-					$resultData = IntegrityChecker::checkVulnerabilities($task, $tmpDir);
-
-					$results = $resultData['result_strings'];
-
-					if (count($results) > 0) {
-						PrintTools::text("Results for $taskName: " . json_encode($results, JSON_PRETTY_PRINT));
-						$notifMessage .= "Vulnerabilities: $taskName\n- " . implode("\n- ", $results) . "\n\n";
-					} else {
-						$notifMessage .= "Vulnerabilities: $taskName\n- Nothing\n\n";
-					}
-				}
-				else {
-					throw new \Exception("Invalid item Task: " . $task['task']);
+				if (count($results) > 0) {
+					PrintTools::text("Results for $taskName: " . json_encode($results, JSON_PRETTY_PRINT));
+					$notifMessage .= "$label: $taskName\n- " . implode("\n- ", $results) . "\n\n";
+				} else {
+					$notifMessage .= "$label: $taskName\n- Nothing\n\n";
 				}
 
 			}
