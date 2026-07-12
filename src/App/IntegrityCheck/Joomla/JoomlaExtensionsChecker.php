@@ -48,8 +48,6 @@ class JoomlaExtensionsChecker
 			$basePaths = ExtensionManifestParser::basePaths($extension['type'], $extension['element'], $extension['folder']);
 			$coveredFolders = array_merge($coveredFolders, $basePaths);
 
-			$current = FileHashInventory::buildForPaths($task['folder_root'], array_keys($reference['files']));
-
 			$prefix2 = "[{$extension['element']}] ";
 
 			// Le regroupement par dossier est fait séparément pour chaque racine de l'extension (site/admin/media) :
@@ -60,9 +58,14 @@ class JoomlaExtensionsChecker
 			foreach ($basePaths as $base)
 			{
 				$refSubset = self::subsetUnderPath($reference['files'], $base);
-				if (count($refSubset) === 0) continue;
 
-				$curSubset = self::subsetUnderPath($current['files'], $base);
+				// Vrai scan récursif du dossier (et non un simple lookup des chemins connus du manifeste) :
+				// c'est le seul moyen de détecter un fichier ajouté qui n'existe pas dans la référence officielle
+				// (ex: un fichier suspect déposé dans le dossier d'une extension par ailleurs légitime).
+				$baseDir = rtrim(str_replace('\\', '/', $task['folder_root']), '/') . '/' . $base;
+				$curSubset = is_dir($baseDir) ? FileHashInventory::build($baseDir, [], [])['files'] : [];
+
+				if (count($refSubset) === 0 && count($curSubset) === 0) continue;
 
 				$diff = FileHashInventory::diff($refSubset, $curSubset, $task['folder_group_min_files'] ?? 2);
 
