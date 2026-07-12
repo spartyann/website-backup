@@ -51,4 +51,20 @@ class IntegrityChecker
 		];
 	}
 
+	public static function buildInventory(array $task, string $tmpDir)
+	{
+
+		$folder_root = $task['folder_root'];
+
+		$ignored_files = $task['ignored_files'];
+		$ignored_folders = $task['ignored_folders'];
+
+		$generic_inventory_files = $task['generic_inventory_files'];
+
+
+		return ["Build OK"];
+		// Code ici pour construire le fichier d'inventaire  $generic_inventory_files
+	}
+
+
 }

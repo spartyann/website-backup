@@ -209,7 +209,7 @@ class Config____Sample
 			'group_1' => [
 				[
 					'name' => 'Nom de la tâche',
-					'task' => 'integrity_check', // integrity_check seule option dispo
+					'task' => 'integrity_check',
 					'integrity_type' => 'joomla', // Type d'intégrité à vérifier:  database|joomla|generic
 
 					// Si vérification de dossiers
@@ -242,6 +242,21 @@ class Config____Sample
 
 					'db_dangerous_words' => [], // Mots dangereux à rechercher
 					'db_dangerous_regex' => [], // Regex Mariadb à rechercher
+				],
+				[
+					'name' => 'Nom de la tâche',
+					'task' => 'integrity_build_inventory',
+					
+					// Si vérification de dossiers
+					'folder_root' => dirname(__DIR__ , 2) . '/tests/site_test', // Racine du dossier à vérifier. Ou racine du site Joomla
+
+					'ignored_files' => [], // Liste des fichiers à ignorer (chemins relatifs par rapport à 'folder_root')
+					'ignored_folders' => [], // Liste des dossiers à ignorer (chemins relatifs par rapport à 'folder_root')
+
+					// ******* Cas integrity_type=generic *******
+					// Fichier contenant la liste des Hash de tous les fichiers
+					// C'est sur cette base que la vérification d'intyégrité est faite
+					'generic_inventory_files' => __DIR__ . '/inventory_site_1.json',
 				]
 			]
 		];

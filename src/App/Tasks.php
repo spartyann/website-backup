@@ -66,6 +66,18 @@ class Tasks
 					}
 
 				}
+				else if ($task['task'] == 'integrity_build_inventory')
+				{
+					$taskName = $task['name'];
+					$results = IntegrityChecker::buildInventory($task, $tmpDir);
+					
+					if (count($results) > 0) {
+						PrintTools::text("Results for: " . json_encode($results, JSON_PRETTY_PRINT));
+						$notifMessage .= "Inventory: $taskName\n- " . implode("\n- ", $results) . "\n\n";
+					} else {
+						$notifMessage .= "Inventory: $taskName\n- Nothing\n\n";
+					}
+				}
 				else {
 					throw new \Exception("Invalid item Task: " . $task['task']);
 				}
