@@ -9,6 +9,14 @@
 		<div v-if="items.length > 0">
 
 			<div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
+				<div class="btn-group btn-group-sm" role="group" v-if="deletableItems.length > 0">
+					<button type="button" class="btn btn-outline-secondary" :class="{ active: allSelected }" @click="toggleSelectAll">
+						<i class="fa" :class="allSelected ? 'fa-check-square' : 'fa-square'"></i> Tout sélectionner
+					</button>
+					<button type="button" class="btn btn-outline-danger" :disabled="selectedKeys.size === 0" @click="deleteSelectedItems">
+						<i class="fa fa-trash" aria-hidden="true"></i> Supprimer la sélection ({{ selectedKeys.size }})
+					</button>
+				</div>
 				<div class="btn-group btn-group-sm" role="group">
 					<button type="button" class="btn btn-outline-secondary" :class="{ active: activeExtension === 'all' }" @click="activeExtension = 'all'">Tous</button>
 					<button type="button" class="btn btn-outline-secondary" :class="{ active: activeExtension === 'core' }" v-if="hasCoreItems" @click="activeExtension = 'core'">Noyau ({{ countByExtension('core') }})</button>
@@ -31,6 +39,7 @@
 				<table class="table table-sm table-striped align-middle">
 					<thead>
 						<tr>
+							<th style="width: 40px;"><input type="checkbox" :checked="allSelected" @change="toggleSelectAll" :disabled="deletableItems.length === 0"></th>
 							<th>Statut</th>
 							<th>Type</th>
 							<th>Chemin</th>
@@ -39,6 +48,9 @@
 					</thead>
 					<tbody>
 						<tr v-for="item in filteredItems" :key="item.key">
+							<td>
+								<input v-if="item.deletable && !item.deleted" type="checkbox" :checked="selectedKeys.has(item.key)" @change="toggleSelect(item)">
+							</td>
 							<td><span class="badge" :class="item.badgeClass">{{ item.status }}</span></td>
 							<td>{{ item.type }}</td>
 							<td class="text-break">{{ item.display }}</td>
@@ -135,23 +147,33 @@ export default {
 			activeExtension: 'all',
 			activeType: 'all',
 			activeFileExt: 'all',
+			selectedKeys: new Set(),
 		}
 	},
 
-	computed: {
-		dbItems() {
-			return this.result.database_items_found || [];
-		},
-		watchlistHits() {
-			return this.result.watchlist_hits || [];
-		},
-		velHits() {
-			return this.result.vel_hits || [];
-		},
+		computed: {
+			dbItems() {
+				return this.result.database_items_found || [];
+			},
+			watchlistHits() {
+				return this.result.watchlist_hits || [];
+			},
+			velHits() {
+				return this.result.vel_hits || [];
+			},
 
-		hasCoreItems() {
-			return this.items.some(item => item.extension === 'core');
-		},
+			hasCoreItems() {
+				return this.items.some(item => item.extension === 'core');
+			},
+
+			deletableItems() {
+				return this.items.filter(item => item.deletable && !item.deleted);
+			},
+
+			allSelected() {
+				if (this.deletableItems.length === 0) return false;
+				return this.deletableItems.every(item => this.selectedKeys.has(item.key));
+			},
 
 		// Liste des extensions détectées (préfixe "[element]" dans les chemins), avec leur nombre d'éléments
 		extensions() {
@@ -185,11 +207,56 @@ export default {
 		},
 	},
 
-	methods: {
+		methods: {
 
-		countByExtension(key) {
-			return this.items.filter(item => item.extension === key).length;
-		},
+			countByExtension(key) {
+				return this.items.filter(item => item.extension === key).length;
+			},
+
+			toggleSelect(item) {
+				if (this.selectedKeys.has(item.key)) {
+					this.selectedKeys.delete(item.key);
+				} else {
+					this.selectedKeys.add(item.key);
+				}
+			},
+
+			toggleSelectAll() {
+				if (this.allSelected) {
+					this.selectedKeys.clear();
+				} else {
+					this.filteredItems.filter(item => item.deletable && !item.deleted).forEach(item => this.selectedKeys.add(item.key));
+				}
+			},
+
+			deleteSelectedItems() {
+				const itemsToDelete = this.items.filter(item => this.selectedKeys.has(item.key));
+				if (itemsToDelete.length === 0) return;
+
+				const count = itemsToDelete.filter(item => item.type === 'Dossier').length;
+				const files = itemsToDelete.filter(item => item.type === 'Fichier').length;
+				let message = `Voulez-vous vraiment supprimer ${itemsToDelete.length} élément(s) ?\n\n`;
+				if (count > 0) message += `${count} dossier(s)\n`;
+				if (files > 0) message += `${files} fichier(s)\n`;
+
+				if (confirm(message) == false) return;
+
+				itemsToDelete.forEach(item => {
+					item.deleting = true;
+					window.api.call("delete_item", {
+						group: this.group,
+						task_name: this.task,
+						path: this.rawPath(item),
+						type: item.type === 'Dossier' ? 'folder' : 'file',
+					}, () => {
+						item.deleting = false;
+						item.deleted = true;
+						this.selectedKeys.delete(item.key);
+					}, () => {
+						item.deleting = false;
+					});
+				});
+			},
 
 		buildItems() {
 			const r = this.result;
