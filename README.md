@@ -205,6 +205,10 @@ Garder ce dossier hors de la racine web.
 php remote_scripts/script.php
 ```
 
+Le script s’arrête à la première erreur avec le **code de sortie 1** et écrit le message sur `stderr`.
+Cela inclut les erreurs de configuration, de téléchargement, d’écriture, de rétention et d’import MySQL.
+Une exécution réussie (y compris sans tâche activée) retourne **0**.
+
 Le client impose HTTPS avec validation du certificat et refuse les redirections.
 Il vérifie le statut HTTP, le type de contenu des réponses de l’API et la taille des archives.
 Les fichiers téléchargés sont privés (permissions 0600) et finalisés après succès ; les fichiers temporaires
@@ -257,6 +261,7 @@ Les tests isolés utilisent des fichiers temporaires et des doublures, sans acc�
 ```bash
 php tests/api_security.php
 php -n tests/remote_scripts_security.php
+php tests/remote_scripts_exit_codes.php
 ```
 
 Le second test simule cURL dans un namespace isolé ; `-n` limite les extensions chargées.

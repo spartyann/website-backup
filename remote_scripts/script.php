@@ -5,9 +5,6 @@ if (PHP_SAPI !== 'cli') {
     exit('Exécution CLI uniquement');
 }
 
-require_once __DIR__ . '/config.php';
-
-
 /** HTTPS uniquement, sans redirection : aucun secret transmis à un autre serveur. */
 function downloadFileWithCurl($url, $destination, array $post = [], ?string $apiKey = null, ?string $contentType = null) {
     $parts = parse_url($url);
@@ -28,7 +25,7 @@ function downloadFileWithCurl($url, $destination, array $post = [], ?string $api
         $file = fopen($temporary, 'wb');
         if ($file === false) throw new RuntimeException('Fichier temporaire inaccessible');
         $ch = curl_init($url);
-        curl_setopt_array($ch, [
+        $configured = curl_setopt_array($ch, [
             CURLOPT_FILE => $file,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
@@ -41,9 +38,12 @@ function downloadFileWithCurl($url, $destination, array $post = [], ?string $api
             CURLOPT_USERAGENT => 'WebsiteBackup-Remote/1.0',
             CURLOPT_HTTPHEADER => $apiKey === null ? [] : ['Authorization: Bearer ' . $apiKey],
         ]);
+        if (!$configured) throw new RuntimeException('Configuration cURL impossible');
         if ($post !== []) {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post));
+            if (!curl_setopt($ch, CURLOPT_POST, true)
+                || !curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post))) {
+                throw new RuntimeException('Configuration POST impossible');
+            }
         }
         $result = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -198,7 +198,7 @@ function runMysql(string $host, string $user, string $password, string $argument
             ["\\", '"', "\n", "\r"], ["\\\\", '\\"', '\\n', '\\r'], $value) . '"';
         $contents = "[client]\n" . 'host=' . $quote($host) . "\nuser=" . $quote($user)
             . "\npassword=" . $quote($password) . "\n";
-        if (file_put_contents($credentials, $contents) === false) throw new RuntimeException('Écriture MySQL impossible');
+        if (file_put_contents($credentials, $contents) !== strlen($contents)) throw new RuntimeException('Écriture MySQL impossible');
         $output = [];
         $status = 1;
         exec('mysql --defaults-extra-file=' . escapeshellarg($credentials) . ' ' . $arguments, $output, $status);
@@ -216,12 +216,27 @@ function importViaMysqlCommand($sqlFile, $host, $user, $pass, $rootuser, $rootpa
         . escapeshellarg($database) . ' < ' . escapeshellarg($sqlFile));
 }
 
+// Les avertissements non masqués (I/O, configuration, etc.) doivent aussi faire échouer le processus.
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) return false;
+    throw new \ErrorException($message, 0, $severity, $file, $line);
+});
 try {
+    if (!is_readable(__DIR__ . '/config.php')) throw new RuntimeException('Fichier config.php absent ou illisible');
+    try { require_once __DIR__ . '/config.php'; }
+    catch (Throwable $exception) { throw new RuntimeException('Impossible de charger config.php', 0, $exception); }
+    if (!defined('CONF') || !is_array(CONF)) throw new RuntimeException('CONF doit être un tableau');
     foreach (CONF as $conf) {
+        if (!is_array($conf) || (isset($conf['enabled']) && !is_bool($conf['enabled']))) {
+            throw new RuntimeException('Entrée de configuration invalide');
+        }
         if (($conf['enabled'] ?? false) !== true) continue;
         if ($conf['type'] === 'local_backups') {
             downloadLocalBackups($conf);
         } elseif ($conf['type'] === 'dump_sql') {
+            if (!is_array($conf['urls'] ?? null) || $conf['urls'] === []) {
+                throw new RuntimeException('Aucune URL d’export SQL configurée');
+            }
             foreach ($conf['urls'] as $url) {
                 $file = tempnam(sys_get_temp_dir(), 'website-backup-import-');
                 if ($file === false) throw new RuntimeException('Fichier SQL temporaire indisponible');
@@ -240,12 +255,16 @@ try {
             $file = __DIR__ . '/dump.json';
             downloadFileWithCurl($conf['url'], $file);
             $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
-            file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+            $json = json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+            if (file_put_contents($file, $json) !== strlen($json)) throw new RuntimeException('Écriture JSON impossible');
         } else {
             throw new RuntimeException('Type de tâche inconnu');
         }
     }
 } catch (Throwable $exception) {
-    fwrite(STDERR, 'Erreur : ' . $exception->getMessage() . PHP_EOL);
+    // Même un stderr indisponible ne doit pas remplacer le code de sortie attendu.
+    @fwrite(STDERR, 'Erreur : ' . $exception->getMessage() . PHP_EOL);
     exit(1);
+} finally {
+    restore_error_handler();
 }

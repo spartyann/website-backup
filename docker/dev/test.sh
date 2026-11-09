@@ -5,4 +5,5 @@ source ./identity.sh
 # Pas de navigateur, réseau externe, service de production ou suppression de données.
 docker compose exec -T --user "$WB_DEV_UID:$WB_DEV_GID" web php /workspace/tests/api_security.php
 docker compose exec -T --user "$WB_DEV_UID:$WB_DEV_GID" web php -n /workspace/tests/remote_scripts_security.php
+docker compose exec -T --user "$WB_DEV_UID:$WB_DEV_GID" web php /workspace/tests/remote_scripts_exit_codes.php
 docker compose exec -T --user "$WB_DEV_UID:$WB_DEV_GID" web php /opt/website-backup-dev/smoke.php
