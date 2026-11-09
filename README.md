@@ -17,6 +17,19 @@ Ce projet permet d'effectuer des sauvegardes de sites PHP/MySql/MariaDB. Il est 
 - Prise en charge de plusieurs répertoires de site
 - Suppression des vielles sauvegardes
 
+## Développement local avec Docker
+
+Un environnement isolé (Apache/PHP, MariaDB et phpMyAdmin) est disponible dans
+[`docker/dev`](docker/dev/README.md), avec alignement des UID/GID locaux et données de démonstration.
+
+```bash
+./docker/dev/start.sh
+# Puis ouvrir http://127.0.0.1:8090/ui.php
+```
+
+Le mot de passe est généré dans `docker/dev/.env` (`WB_DEV_UI_PASSWORD`).
+Cet environnement ne modifie pas votre configuration de production.
+
 ## Installation
 
 Récupérez le contenu du dossier **"src"** et copiez-le sur votre hébergement dans un dossier non accessible depuis le web. (inutile de conserver le nom de dossier "src")
@@ -64,15 +77,133 @@ URL: `https://<YOUR_URL>/ui.php`
 
 Utilisez le mot de passe défini en Config.
 
+### Archives locales dans l’interface
+
+L’onglet **Archives locales** permet de rechercher et télécharger les archives finalisées `.tar` et `.zip`
+présentes directement dans `Config::localStorageBackupDir()`, triées par date de modification décroissante.
+Les noms doivent contenir la date au format produit par le projet (`2026-11-09__10-00-00`).
+Les sous-dossiers, le dossier `temp` et les liens symboliques sont exclus.
+Le bouton **Actualiser** recharge la liste, notamment après une nouvelle sauvegarde.
+
 ### Via API
 
-L'API est utilisée par l'interface ui.php.
+Toutes les réponses utilisent `Cache-Control: no-store`. Les erreurs sont renvoyées en JSON avec
+`success: false` et un statut HTTP : 400 (paramètres), 401 (authentification), 403 (droits),
+404 (fichier ou élément absent), 405 (méthode), 500 (erreur interne).
+Utiliser HTTPS pour protéger les secrets et les sauvegardes pendant le transfert.
 
-Mais vous pouvez utiliser une option "dump_and_download_db" qui vous permet de télécharger le SQL de tables configurées dans les options de Config.
+**Migration : `apipwd` dans l’URL est désormais refusé sur toute l’API**, même s’il est aussi envoyé en POST.
+Les opérations existantes (`login`, `load`, `run_backup`, `run_tasks`, `run_single_task`, `delete_item`,
+`dump_and_download_db`) exigent POST et le mot de passe `UI_PASSWORD` dans le corps du formulaire.
+La réponse `load` ne renvoie plus la configuration complète des groupes, uniquement leurs noms
+et les informations de tâches nécessaires à l’interface.
 
-URL: `https://<YOUR_URL>/api.php?apipwd=<PWD>&operation=dump_and_download_db`
+Exemple d’export SQL des tables configurées dans `Config::downloadDBApi()` :
 
-PWD = Mot de passe UI.
+```bash
+# Définir BACKUP_UI_PASSWORD dans l’environnement du script.
+curl --fail --request POST \
+  --data-urlencode "apipwd=$BACKUP_UI_PASSWORD" \
+  --data-urlencode 'operation=dump_and_download_db' \
+  --data-urlencode 'item=mon_export' \
+  --output dump.sql \
+  'https://exemple.fr/api.php'
+```
+
+Les deux nouvelles opérations d’archives acceptent :
+
+- **GET ou POST avec `Authorization: Bearer <clé>`**, pour les scripts ;
+- **POST avec `apipwd` dans le corps**, pour l’interface.
+
+Ajouter `public const LOCAL_BACKUP_API_KEY = 'votre_cle';` dans votre `Config.php` existant.
+Une clé absente ou vide désactive l’accès Bearer. Générer une clé aléatoire :
+
+```bash
+php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+```
+
+Cette clé autorise uniquement la liste et le téléchargement des archives locales. Elle ne permet
+ni l’export SQL, ni le lancement des sauvegardes, ni les tâches, ni les suppressions.
+Pour révoquer la clé, la changer dans `Config.php` et mettre à jour les scripts clients.
+L’en-tête `Authorization` doit être transmis à PHP par l’hébergement ; une règle est fournie dans
+`src/.htaccess` pour Apache. Si un proxy ou une autre configuration serveur filtre cet en-tête,
+il faut adapter sa configuration.
+
+```bash
+# Définir BACKUP_API_KEY dans l’environnement du script.
+curl --fail \
+  -H "Authorization: Bearer $BACKUP_API_KEY" \
+  'https://exemple.fr/api.php?operation=list_local_backups'
+```
+
+Exemple de réponse (les identifiants sont à réutiliser tels quels) :
+
+```json
+{
+  "success": true,
+  "backups": [
+    {
+      "id": "my_site_2026-11-09__10-00-00.zip",
+      "name": "my_site_2026-11-09__10-00-00.zip",
+      "size": 123456,
+      "modified_at": "2026-11-09T10:00:00+00:00"
+    }
+  ]
+}
+```
+
+```bash
+curl --fail --get \
+  -H "Authorization: Bearer $BACKUP_API_KEY" \
+  --data-urlencode 'operation=download_local_backup' \
+  --data-urlencode 'id=my_site_2026-11-09__10-00-00.zip' \
+  --output sauvegarde.zip \
+  'https://exemple.fr/api.php'
+```
+
+Le fichier est transmis en flux. S’il a été supprimé entre la liste et le téléchargement
+(par exemple par la rétention), l’API renvoie 404. Les sauvegardes doivent rester dans un dossier
+hors de la racine web : l’authentification de l’API ne protège pas une URL statique exposée par le serveur.
+
+### Scripts distants
+
+Le dossier `remote_scripts` contient le client PHP à exécuter en CLI sur la machine qui récupère
+les données (extension cURL requise, client `mysql` pour les imports SQL).
+Copier `remote_scripts/config.sample.php` vers `remote_scripts/config.php`, renseigner les secrets,
+puis activer les entrées souhaitées avec `'enabled' => true`.
+Garder ce dossier hors de la racine web.
+
+- `type: local_backups` : renseigner `api_url` (sans paramètres), `api_key` et `destination`.
+  Toutes les archives disponibles sont téléchargées. Un fichier présent de même nom et de même taille
+  est ignoré. Cette comparaison ne vérifie pas son intégrité cryptographique.
+  Le client ne supprime pas les anciennes copies lorsque la rétention les supprime du serveur.
+- `type: dump_sql` : conserver les URL avec `operation` et `item`, retirer `apipwd` des URL
+  et renseigner `api_password` avec `UI_PASSWORD`. Les exports sont téléchargés en POST puis importés.
+  La clé des archives ne peut pas remplacer ce mot de passe.
+- `type: matomo_json` : le mode existant reste disponible avec une URL HTTPS.
+
+```bash
+php remote_scripts/script.php
+```
+
+Le client impose HTTPS avec validation du certificat et refuse les redirections.
+Il vérifie le statut HTTP, le type de contenu des réponses de l’API et la taille des archives.
+Les fichiers téléchargés sont privés (permissions 0600) et finalisés après succès ; les fichiers temporaires
+sont supprimés en cas d’erreur normale. Les exports SQL et fichiers d’identifiants MySQL sont temporaires ;
+les mots de passe MySQL ne sont plus passés en arguments de commande.
+Un arrêt forcé du processus peut nécessiter un nettoyage manuel des fichiers temporaires.
+Le délai maximal de transfert est d’une heure par requête ; aucun téléchargement partiel n’est repris.
+
+### Vérifications de développement
+
+Les tests isolés utilisent des fichiers temporaires et des doublures, sans accès réseau ni base réelle :
+
+```bash
+php tests/api_security.php
+php -n tests/remote_scripts_security.php
+```
+
+Le second test simule cURL dans un namespace isolé ; `-n` limite les extensions chargées.
 
 ## Paramètres du fichier Config.php
 
@@ -84,7 +215,8 @@ Liste des paramètres:
 | DB_MYSQLDUMP_VARIABLES | ```[ 'triggers' => true ]``` | Utiliser la commande:  _**mysqldump --help**_ pour voir toutes les variables en option |	
 | DB_DUMP_LIB_SETTINGS | ```[ 'add-locks' => false ]``` | **Dump Settings** pour [Ifsnop\Mysqldump\Mysqldump] |
 | URL_TOKEN | Token d'authentification | Utilisé lors des appel via URL. Ajouter dans l'URL `&token=<valeur de votre token>` |
-| UI_PASSWORD | Mot de passe d'authentification pour le UI | Utilisé lors pour la connexion à ui.php |
+| UI_PASSWORD | Mot de passe d’authentification | Interface et opérations API existantes, envoyé en POST |
+| LOCAL_BACKUP_API_KEY | Clé aléatoire ou chaîne vide | Accès Bearer en lecture aux archives locales ; vide ou absente = désactivé |
 | groups() | Voir Config.sample.php | Liste des éléments à sauvegarder. (DB, Fichiers, Email, Sync Google Docs, Google Search Console keywords) |
 | downloadDBApi() | Permet un export de DB | Via API permet de récupérer le SQL de tables spécifiques. Voir section API. |
 | COMPRESSION_TYPE | 'tar' \| 'phpzip' | Format de compression. Utiliser **tar** pour conserver les permissions de fichiers |

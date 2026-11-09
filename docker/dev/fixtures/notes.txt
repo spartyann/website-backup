@@ -1,0 +1,2 @@
+Données locales de démonstration.
+Modifier ce fichier dans docker/dev/data/site pour tester les contrôles d’intégrité.

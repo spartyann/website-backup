@@ -36,6 +36,10 @@ class Config____Sample
 	// Passord for UI
 	public const UI_PASSWORD = 'xxxxxxxxxxxx';
 
+	// Clé Bearer réservée à la liste et au téléchargement des archives locales.
+	// Vide = accès par clé désactivé. Générer avec : php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+	public const LOCAL_BACKUP_API_KEY = '';
+
 	// Items to Backup
 	public static function groups() {
 		return [

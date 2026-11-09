@@ -1,0 +1,66 @@
+name: website-backup-dev
+
+services:
+  web:
+    build: ./php
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8090}:80"
+    environment:
+      WB_DEV_UID: ${WB_DEV_UID:?Lancer start.sh ou charger identity.sh}
+      WB_DEV_GID: ${WB_DEV_GID:?Lancer start.sh ou charger identity.sh}
+      WB_DEV_UI_PASSWORD: ${WB_DEV_UI_PASSWORD:?Lancer start.sh}
+      WB_DEV_API_KEY: ${WB_DEV_API_KEY:?Lancer start.sh}
+      WB_DEV_URL_TOKEN: ${WB_DEV_URL_TOKEN:?Lancer start.sh}
+      WB_DEV_DB_PASSWORD: ${WB_DEV_DB_PASSWORD:?Lancer start.sh}
+      WB_DEV_COMPRESSION: ${WB_DEV_COMPRESSION:-tar}
+      COMPOSER_HOME: /tmp/website-backup-composer
+    volumes:
+      - ../..:/workspace:ro
+      - ./php:/opt/website-backup-dev:ro
+      - ./fixtures:/opt/website-backup-fixtures:ro
+      - ./data/vendor:/workspace/src/vendor
+      - ./data/composer:/tmp/website-backup-composer
+      - ./data/backups:/data/backups
+      - ./data/site:/data/site
+      - ./data/integrity:/data/integrity
+    working_dir: /workspace/src
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1/ui.php"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 120s
+
+  mariadb:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: website_backup_dev
+      MARIADB_USER: backup_dev
+      MARIADB_PASSWORD: ${WB_DEV_DB_PASSWORD:?Lancer start.sh}
+      MARIADB_ROOT_PASSWORD: ${WB_DEV_DB_ROOT_PASSWORD:?Lancer start.sh}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./mariadb/001-demo.sql:/docker-entrypoint-initdb.d/001-demo.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    ports:
+      - "127.0.0.1:${PHPMYADMIN_PORT:-8091}:80"
+    environment:
+      PMA_HOST: mariadb
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+volumes:
+  mariadb-data:

@@ -1,3 +1,5 @@
 config.php
 dump.sql
 dump.json
+backups/
+.backup-*

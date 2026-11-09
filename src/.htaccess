@@ -20,3 +20,8 @@ Deny From All
 <FilesMatch "^.*(\.js|\.css|\.vue|\.eot|\.svg|\.ttf|\.woff|\.woff2|\.less|\.scss|\.map)$">
 	Allow From All
 </FilesMatch>
+
+# Transmettre la clé Bearer à PHP sur les hébergements Apache/CGI.
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>

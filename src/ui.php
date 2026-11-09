@@ -17,10 +17,10 @@ require_once(__DIR__ . '/vendor/autoload.php');
 		<script src="assets/vue/vue.global.js"></script>
 		<link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<script src="assets/bootstrap/js/bootstrap.bundle.min.js" ></script>
-		<script src="assets/js/app.js" ></script>
+		<script src="assets/js/app.js?v=2" ></script>
 
 		<script>
-			const VERSION = 1;
+			const VERSION = 2;
 
 			const vueLoaderOptions = {
 				moduleCache: {
