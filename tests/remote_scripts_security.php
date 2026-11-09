@@ -88,10 +88,77 @@ try {
     $responses = [$badList];
     rejects(fn() => downloadLocalBackups($conf), 'Lien local refusé');
     check(glob($fixture . '/.backup-*') === [] && glob($conf['destination'] . '/.backup-*') === [], 'Fichiers temporaires nettoyés');
+    foreach ([['max_age_days' => 0], ['max_age_days' => '7'], ['retention_days' => -1], ['retention_days' => 365001],
+        ['min_versions' => -1], ['min_versions' => '2']] as $invalidOptions) {
+        rejects(fn() => downloadLocalBackups(array_merge($conf, $invalidOptions)), 'Options de rétention strictes');
+    }
+    $responses = [$list];
+    // Éviter un nouveau transfert pour vérifier seulement l'URL du listing filtré.
+    file_put_contents($conf['destination'] . '/' . $name, 'archive');
+    downloadLocalBackups(array_merge($conf, ['max_age_days' => 7]));
+    check(str_contains($lastRequest->url, 'max_age_days=7'), 'Filtre d’âge transmis à l’API');
+    $lock = fopen($conf['destination'] . '/.website-backup.lock', 'c');
+    flock($lock, LOCK_EX);
+    rejects(fn() => downloadLocalBackups($conf), 'Synchronisation concurrente refusée');
+    fclose($lock);
+
+    $retentionDir = $fixture . '/retention';
+    mkdir($retentionDir);
+    $daily = ['site_2026-09-01__12-00-00_daily.tar', 'site_2026-09-02__12-00-00_daily.zip', 'site_2026-09-03__12-00-00_daily.tar'];
+    $database = ['db_2026-09-01__12-00-00.tar', 'db_2026-09-02__12-00-00.zip', 'db_2026-09-03__12-00-00.tar'];
+    $preserved = ['site_2026-09-01__12-00-00_weekly.tar', 'recent_2026-11-08__12-00-00.tar',
+        'edge_2026-10-10__12-00-00.tar', 'safe_2026-09-01__12-00-00.tar', 'notes.txt',
+        'invalid_2026-02-30__12-00-00.zip', 'ambiguous_2026-09-01__12-00-00_2026-09-02__12-00-00.tar'];
+    foreach (array_merge($daily, $database, $preserved) as $file) file_put_contents($retentionDir . '/' . $file, 'data');
+    mkdir($retentionDir . '/folder_2026-09-01__12-00-00.tar');
+    file_put_contents($retentionDir . '/folder_2026-09-01__12-00-00.tar/keep.txt', 'nested');
+    symlink($fixture . '/file', $retentionDir . '/safe_2026-10-01__12-00-00.tar');
+    touch($retentionDir . '/' . $daily[0], time());
+    touch($retentionDir . '/' . $daily[2], 946684800);
+    $timezone = new \DateTimeZone('UTC');
+    $now = new \DateTimeImmutable('2026-11-09 12:00:00', $timezone);
+    pruneLocalBackups($retentionDir, 30, 2, $timezone, $now);
+    check(!file_exists($retentionDir . '/' . $daily[0]) && file_exists($retentionDir . '/' . $daily[1])
+        && file_exists($retentionDir . '/' . $daily[2]), 'Deux versions par série, indépendantes du mtime et du format');
+    check(!file_exists($retentionDir . '/' . $database[0]) && file_exists($retentionDir . '/' . $database[1])
+        && file_exists($retentionDir . '/' . $database[2]), 'Minimum indépendant pour la base');
+    foreach ($preserved as $file) check(file_exists($retentionDir . '/' . $file), 'Fichier conservé : ' . $file);
+    check(file_exists($retentionDir . '/folder_2026-09-01__12-00-00.tar/keep.txt'), 'Aucune récursion');
+    pruneLocalBackups($retentionDir, 30, 1, $timezone, $now);
+    check(file_exists($retentionDir . '/safe_2026-09-01__12-00-00.tar')
+        && is_link($retentionDir . '/safe_2026-10-01__12-00-00.tar'), 'Lien non compté comme version et jamais supprimé');
+    pruneLocalBackups($retentionDir, 30, 0, $timezone, $now);
+    check(!file_exists($retentionDir . '/' . $daily[2]) && file_exists($retentionDir . '/recent_2026-11-08__12-00-00.tar')
+        && file_exists($retentionDir . '/edge_2026-10-10__12-00-00.tar'), 'Minimum zéro et limite d’âge stricte');
+    check(backupNameMetadata('site_2026-03-29__02-30-00.tar', new \DateTimeZone('Europe/Paris')) === null,
+        'Heure inexistante dans le fuseau refusée');
+
+    $oldName = 'cleanup_2001-01-01__00-00-00.tar';
+    file_put_contents($conf['destination'] . '/' . $oldName, 'old');
+    $cleanupConf = array_merge($conf, ['retention_days' => 30, 'min_versions' => 0]);
+    $responses = [['status' => 500, 'type' => 'application/json', 'body' => 'error']];
+    rejects(fn() => downloadLocalBackups($cleanupConf), 'Erreur de listing interrompt la purge');
+    check(file_exists($conf['destination'] . '/' . $oldName), 'Anciennes copies préservées après erreur réseau');
+    file_put_contents($conf['destination'] . '/' . $name, 'old');
+    $responses = [$list, ['status' => 200, 'type' => 'application/octet-stream', 'body' => 'short']];
+    rejects(fn() => downloadLocalBackups($cleanupConf), 'Erreur de taille interrompt la purge');
+    check(file_exists($conf['destination'] . '/' . $oldName), 'Anciennes copies préservées après erreur de transfert');
+    $responses = [['status' => 200, 'type' => 'application/json', 'body' => '{"success":true,"backups":[]}']];
+    downloadLocalBackups($conf);
+    check(file_exists($conf['destination'] . '/' . $oldName), 'Purge désactivée par défaut');
+    $responses = [['status' => 200, 'type' => 'application/json', 'body' => '{"success":true,"backups":[]}']];
+    downloadLocalBackups($cleanupConf);
+    check(!file_exists($conf['destination'] . '/' . $oldName), 'Purge après synchronisation réussie, même sans nouvelle archive');
     echo $checks . " vérifications réussies\n";
 } finally {
-    foreach (glob($fixture . '/archives/*') as $file) unlink($file);
-    if (is_dir($fixture . '/archives')) rmdir($fixture . '/archives');
-    foreach (glob($fixture . '/*') as $file) unlink($file);
-    rmdir($fixture);
+    $remove = function (string $directory) use (&$remove): void {
+        foreach (scandir($directory) as $name) {
+            if ($name === '.' || $name === '..') continue;
+            $path = $directory . '/' . $name;
+            if (is_dir($path) && !is_link($path)) $remove($path);
+            else unlink($path);
+        }
+        rmdir($directory);
+    };
+    $remove($fixture);
 }

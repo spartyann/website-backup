@@ -130,7 +130,13 @@ try {
 
     if ($archiveOperation) {
         $archives = new LocalBackups(Config::localStorageBackupDir());
-        if ($operation === 'list_local_backups') sendResponse(['backups' => $archives->list()]);
+        if ($operation === 'list_local_backups') {
+            $maxAge = apiParam('max_age_days');
+            if ($maxAge !== null && (!preg_match('/^[1-9][0-9]{0,5}$/D', $maxAge) || (int) $maxAge > 365000)) {
+                sendError('max_age_days doit être un entier entre 1 et 365000');
+            }
+            sendResponse(['backups' => $archives->list($maxAge === null ? null : (int) $maxAge)]);
+        }
         $id = requiredParam('id');
         $file = $archives->open($id);
         if ($file === null) sendError('Archive introuvable', 404);

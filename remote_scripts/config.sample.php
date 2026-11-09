@@ -10,8 +10,13 @@ define('CONF', [
         'api_url' => 'https://<server>/<dir>/api.php', // Sans paramètres.
         'api_key' => '', // LOCAL_BACKUP_API_KEY du serveur, limitée à la lecture des archives.
         'destination' => __DIR__ . '/backups',
-        // Télécharge toutes les archives disponibles ; ignore les fichiers présents de même taille.
-        // Les fichiers locaux ne sont pas supprimés lorsque la rétention serveur les supprime.
+        'max_age_days' => null, // null = tout télécharger ; 7 = archives de moins de 7 jours.
+        'retention_days' => null, // null = aucune suppression ; 30 = supprimer les copies de plus de 30 jours.
+        'min_versions' => 1, // Minimum conservé PAR SÉRIE (préfixe + suffixe), même si les copies sont anciennes.
+        'backup_timezone' => 'Europe/Paris', // Même fuseau PHP que celui du serveur qui crée les noms.
+        // Âge et ordre des versions : date Y-m-d__H-i-s du NOM, jamais date du téléchargement.
+        // La purge ne s'exécute qu'après une synchronisation réussie, dans ce seul dossier.
+        // Ce dossier doit être réservé aux copies d'archives de cette source.
     ],
     [
         'enabled' => false,

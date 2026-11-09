@@ -20,7 +20,7 @@ require_once(__DIR__ . '/vendor/autoload.php');
 		<script src="assets/js/app.js?v=2" ></script>
 
 		<script>
-			const VERSION = 2;
+			const VERSION = 3;
 
 			const vueLoaderOptions = {
 				moduleCache: {

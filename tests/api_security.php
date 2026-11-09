@@ -111,6 +111,31 @@ try {
     check($status === 200 && $body === 'SELECT 1;', 'Export SQL en POST');
     check($before === glob(sys_get_temp_dir() . '/website-backup-sql-*'), 'Export temporaire nettoyé');
     check(file_get_contents($fixture . '/archives/' . $archive) === 'archive-content', 'Archive préservée');
+    $recent = 'recent_' . gmdate('Y-m-d__H-i-s', time() - 2 * 86400) . '.zip';
+    $old = 'old_' . gmdate('Y-m-d__H-i-s', time() - 10 * 86400) . '.tar';
+    file_put_contents($fixture . '/archives/' . $recent, 'recent');
+    file_put_contents($fixture . '/archives/' . $old, 'old');
+    // Les dates disque sont volontairement inversées par rapport aux noms.
+    touch($fixture . '/archives/' . $recent, 946684800);
+    touch($fixture . '/archives/' . $old, time() + 86400);
+    file_put_contents($fixture . '/archives/invalid_2026-02-30__10-00-00.zip', 'invalid');
+    file_put_contents($fixture . '/archives/ambiguous_2026-11-09__10-00-00_2026-11-08__10-00-00.zip', 'ambiguous');
+    [$status, $body] = request(['method' => 'GET', 'get' => ['operation' => 'list_local_backups', 'max_age_days' => '7'], 'bearer' => 'test-key']);
+    $names = array_column(json_decode($body, true)['backups'], 'name');
+    check($status === 200 && in_array($recent, $names) && !in_array($old, $names), 'Filtre API selon le nom, pas le mtime');
+    [$status, $body] = request(['post' => ['operation' => 'list_local_backups', 'max_age_days' => '1', 'apipwd' => 'test-password']]);
+    check($status === 200 && !in_array($recent, array_column(json_decode($body, true)['backups'], 'name')), 'Filtre POST');
+    [$status, $body] = request(['method' => 'GET', 'get' => ['operation' => 'list_local_backups'], 'bearer' => 'test-key']);
+    $all = json_decode($body, true)['backups'];
+    $names = array_column($all, 'name');
+    check(in_array($old, $names), 'Absence de filtre conserve toutes les dates');
+    check(!in_array('invalid_2026-02-30__10-00-00.zip', $names)
+        && !in_array('ambiguous_2026-11-09__10-00-00_2026-11-08__10-00-00.zip', $names), 'Dates invalides ou ambiguës exclues');
+    check(isset($all[0]['created_at'], $all[0]['modified_at']), 'Date du nom exposée sans retirer modified_at');
+    foreach (['0', '-1', '1.5', '1e2', '', ' 7', '365001', '99999999999999999', ['7']] as $invalidAge) {
+        check(request(['method' => 'GET', 'get' => ['operation' => 'list_local_backups', 'max_age_days' => $invalidAge],
+            'bearer' => 'test-key'])[0] === 400, 'Filtre d’âge invalide refusé');
+    }
     echo $count . " vérifications réussies\n";
 } finally {
     removeFixture($fixture);

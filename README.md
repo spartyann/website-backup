@@ -80,7 +80,7 @@ Utilisez le mot de passe défini en Config.
 ### Archives locales dans l’interface
 
 L’onglet **Archives locales** permet de rechercher et télécharger les archives finalisées `.tar` et `.zip`
-présentes directement dans `Config::localStorageBackupDir()`, triées par date de modification décroissante.
+présentes directement dans `Config::localStorageBackupDir()`, triées par date de sauvegarde décroissante (date extraite du nom).
 Les noms doivent contenir la date au format produit par le projet (`2026-11-09__10-00-00`).
 Les sous-dossiers, le dossier `temp` et les liens symboliques sont exclus.
 Le bouton **Actualiser** recharge la liste, notamment après une nouvelle sauvegarde.
@@ -136,6 +136,23 @@ curl --fail \
   'https://exemple.fr/api.php?operation=list_local_backups'
 ```
 
+Pour ne lister que les archives créées il y a **moins de 7 jours**, ajouter `max_age_days=7` :
+
+```bash
+curl --fail --get \
+  -H "Authorization: Bearer $BACKUP_API_KEY" \
+  --data-urlencode 'operation=list_local_backups' \
+  --data-urlencode 'max_age_days=7' \
+  'https://exemple.fr/api.php'
+```
+
+`max_age_days` est facultatif ; absent, toutes les archives reconnues sont listées.
+Il doit être un entier décimal de 1 à 365000, sans signe, espace ou décimales ; une valeur invalide renvoie 400.
+La date de création vient du segment `Y-m-d__H-i-s` du nom, interprété dans le fuseau PHP du serveur
+qui crée les sauvegardes. Une archive exactement à la limite d’âge est exclue du filtre « moins de ».
+`created_at` expose cette date ; `modified_at` reste disponible à titre informatif.
+Les noms avec une date invalide ou plusieurs segments de date complets sont exclus.
+
 Exemple de réponse (les identifiants sont à réutiliser tels quels) :
 
 ```json
@@ -146,6 +163,7 @@ Exemple de réponse (les identifiants sont à réutiliser tels quels) :
       "id": "my_site_2026-11-09__10-00-00.zip",
       "name": "my_site_2026-11-09__10-00-00.zip",
       "size": 123456,
+      "created_at": "2026-11-09T10:00:00+00:00",
       "modified_at": "2026-11-09T10:00:00+00:00"
     }
   ]
@@ -174,9 +192,10 @@ puis activer les entrées souhaitées avec `'enabled' => true`.
 Garder ce dossier hors de la racine web.
 
 - `type: local_backups` : renseigner `api_url` (sans paramètres), `api_key` et `destination`.
-  Toutes les archives disponibles sont téléchargées. Un fichier présent de même nom et de même taille
-  est ignoré. Cette comparaison ne vérifie pas son intégrité cryptographique.
-  Le client ne supprime pas les anciennes copies lorsque la rétention les supprime du serveur.
+  Sans `max_age_days`, toutes les archives disponibles sont téléchargées ; avec une valeur entière, ce filtre
+  est transmis à l’API. Un fichier présent de même nom et de même taille est ignoré.
+  Cette comparaison ne vérifie pas son intégrité cryptographique.
+  La rétention locale est optionnelle et indépendante de celle du serveur (voir ci-dessous).
 - `type: dump_sql` : conserver les URL avec `operation` et `item`, retirer `apipwd` des URL
   et renseigner `api_password` avec `UI_PASSWORD`. Les exports sont téléchargés en POST puis importés.
   La clé des archives ne peut pas remplacer ce mot de passe.
@@ -193,6 +212,43 @@ sont supprimés en cas d’erreur normale. Les exports SQL et fichiers d’ident
 les mots de passe MySQL ne sont plus passés en arguments de commande.
 Un arrêt forcé du processus peut nécessiter un nettoyage manuel des fichiers temporaires.
 Le délai maximal de transfert est d’une heure par requête ; aucun téléchargement partiel n’est repris.
+
+### Rétention des copies dans le script distant
+
+Options disponibles pour chaque entrée `type: local_backups` :
+
+```php
+'max_age_days' => 7,              // Télécharger seulement les archives de moins de 7 jours ; null = toutes.
+'retention_days' => 30,           // Purger les copies de plus de 30 jours ; null = désactivé (défaut).
+'min_versions' => 3,              // Toujours garder au moins 3 archives PAR SÉRIE ; défaut = 1.
+'backup_timezone' => 'Europe/Paris', // Même fuseau PHP que le serveur créateur.
+```
+
+La suppression exige **les deux conditions** : la copie est plus ancienne que `retention_days`
+ET elle ne fait pas partie des `min_versions` archives les plus récentes de sa série.
+Toutes les copies plus récentes que la limite restent conservées : `min_versions` est un minimum, pas un maximum.
+Une copie exactement à la limite est conservée. Si une série a moins de Y copies, toutes sont conservées.
+Le minimum porte sur les copies déjà présentes ; il ne recrée pas celles qui manquent.
+
+Une série est le couple **préfixe + suffixe**, autour de l’unique segment `Y-m-d__H-i-s` du nom,
+sans tenir compte de l’extension `.tar` ou `.zip`. Par exemple `site_2026-11-09__10-00-00_daily.tar`
+et `site_2026-11-08__10-00-00_daily.zip` appartiennent à la même série ; `_weekly` est une autre série.
+Chaque fichier d’archive compte pour une version, même si deux fichiers portent le même horodatage.
+L’âge et l’ordre des versions reposent exclusivement sur la date du nom, jamais sur la date de téléchargement
+ou de modification du fichier. Les jours sont calculés en retranchant X jours à l’instant courant dans le fuseau utilisé.
+Si `backup_timezone` est omis, le fuseau PHP de la machine distante est utilisé.
+
+`max_age_days` et `retention_days` acceptent des entiers PHP de 1 à 365000, ou `null` ;
+`min_versions` accepte un entier de 0 à 1000000 (0 = aucun minimum). Une configuration invalide
+arrête le traitement avant les transferts et les suppressions.
+
+La purge s’exécute seulement après un listing et une synchronisation entièrement réussis, même si aucune
+nouvelle archive n’a été téléchargée. Une erreur réseau, de réponse, de métadonnées ou de taille empêche la purge.
+Un verrou refuse deux synchronisations simultanées du même dossier.
+Seuls les fichiers réguliers avec un nom d’archive reconnu, directement dans `destination`, sont concernés :
+les liens symboliques, les sous-dossiers, les dates invalides et les noms ambigus sont ignorés.
+Le dossier `destination` doit être réservé aux copies d’archives d’une seule source.
+La rétention est désactivée pour les configurations existantes qui n’indiquent pas `retention_days`.
 
 ### Vérifications de développement
 

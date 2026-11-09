@@ -11,7 +11,17 @@ class LocalBackups
     {
         return $name !== '' && !str_contains($name, '/') && !str_contains($name, '\\')
             && !preg_match('/[\x00-\x1f\x7f]/', $name)
-            && preg_match('/\d{4}-\d{2}-\d{2}__\d{2}-\d{2}-\d{2}.*\.(tar|zip)$/D', $name) === 1;
+            && $this->archiveDate($name) !== null;
+    }
+
+    private function archiveDate(string $name): ?\DateTimeImmutable
+    {
+        if (!preg_match('/\.(tar|zip)$/D', $name)
+            || preg_match_all('/\d{4}-\d{2}-\d{2}__\d{2}-\d{2}-\d{2}/', $name, $matches) !== 1) return null;
+        $value = $matches[0][0];
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d__H-i-s', $value);
+        // PHP peut normaliser silencieusement une date invalide : refuser ces noms.
+        return $date !== false && $date->format('Y-m-d__H-i-s') === $value ? $date : null;
     }
 
     private function path(string $id): ?string
@@ -24,8 +34,12 @@ class LocalBackups
         return $path;
     }
 
-    public function list(): array
+    public function list(?int $maxAgeDays = null): array
     {
+        if ($maxAgeDays !== null && ($maxAgeDays < 1 || $maxAgeDays > 365000)) {
+            throw new \InvalidArgumentException('Invalid archive age');
+        }
+        $cutoff = $maxAgeDays === null ? null : (new \DateTimeImmutable())->sub(new \DateInterval('P' . $maxAgeDays . 'D'));
         if (!file_exists($this->directory)) return [];
         $names = scandir($this->directory);
         if ($names === false) throw new \RuntimeException('Archive directory unavailable');
@@ -33,13 +47,16 @@ class LocalBackups
         foreach ($names as $name) {
             $path = $this->path($name);
             if ($path === null) continue;
+            $created = $this->archiveDate($name);
+            if ($cutoff !== null && $created <= $cutoff) continue;
             $size = filesize($path);
             $modified = filemtime($path);
             if ($size === false || $modified === false) continue;
             $files[] = ['id' => $name, 'name' => $name, 'size' => $size,
+                'created_at' => $created->format('c'),
                 'modified_at' => gmdate('c', $modified)];
         }
-        usort($files, fn($a, $b) => strcmp($b['modified_at'], $a['modified_at']) ?: strcmp($a['name'], $b['name']));
+        usort($files, fn($a, $b) => strcmp($b['created_at'], $a['created_at']) ?: strcmp($a['name'], $b['name']));
         return $files;
     }
 

@@ -62,17 +62,97 @@ function downloadFileWithCurl($url, $destination, array $post = [], ?string $api
     }
 }
 
+/** Date et série déduites uniquement du nom ; aucune utilisation de filemtime(). */
+function backupNameMetadata(string $name, \DateTimeZone $timezone): ?array {
+    if ($name === '' || str_contains($name, '/') || str_contains($name, '\\')
+        || preg_match('/[\x00-\x1f\x7f]/', $name)
+        || !preg_match('/^(.*?)(\d{4}-\d{2}-\d{2}__\d{2}-\d{2}-\d{2})(.*)\.(tar|zip)$/D', $name, $parts)
+        || preg_match_all('/\d{4}-\d{2}-\d{2}__\d{2}-\d{2}-\d{2}/', $name) !== 1) return null;
+    $date = \DateTimeImmutable::createFromFormat('!Y-m-d__H-i-s', $parts[2], $timezone);
+    if ($date === false || $date->format('Y-m-d__H-i-s') !== $parts[2]) return null;
+    return ['date' => $date, 'series' => json_encode([$parts[1], $parts[3]], JSON_THROW_ON_ERROR)];
+}
+
+function backupIntegerOption(array $conf, string $name, ?int $default, int $minimum, int $maximum): ?int {
+    $value = $conf[$name] ?? $default;
+    if ($value !== null && (!is_int($value) || $value < $minimum || $value > $maximum)) {
+        throw new RuntimeException('Option invalide : ' . $name);
+    }
+    return $value;
+}
+
+/** Ne supprime que les archives régulières reconnues à la racine du dossier configuré. */
+function pruneLocalBackups(string $directory, int $days, int $minimum, \DateTimeZone $timezone,
+    ?\DateTimeImmutable $now = null): void {
+    $cutoff = ($now ?? new \DateTimeImmutable('now', $timezone))->sub(new \DateInterval('P' . $days . 'D'));
+    $names = scandir($directory);
+    if ($names === false) throw new RuntimeException('Liste des copies locales inaccessible');
+    $series = [];
+    foreach ($names as $name) {
+        $metadata = backupNameMetadata($name, $timezone);
+        if ($metadata === null) continue;
+        $path = $directory . DIRECTORY_SEPARATOR . $name;
+        clearstatcache(true, $path);
+        $stat = @lstat($path);
+        if ($stat === false || ($stat['mode'] & 0170000) !== 0100000) continue;
+        $series[$metadata['series']][] = ['name' => $name, 'date' => $metadata['date'], 'stat' => $stat];
+    }
+    foreach ($series as $files) {
+        usort($files, static fn($a, $b) => ($b['date'] <=> $a['date']) ?: strcmp($a['name'], $b['name']));
+        foreach (array_slice($files, $minimum) as $file) {
+            if ($file['date'] >= $cutoff) continue;
+            $path = $directory . DIRECTORY_SEPARATOR . $file['name'];
+            clearstatcache(true, $path);
+            $current = @lstat($path);
+            // Un fichier remplacé depuis l'inventaire est conservé pour la prochaine exécution.
+            if ($current === false || ($current['mode'] & 0170000) !== 0100000
+                || $current['ino'] !== $file['stat']['ino'] || $current['dev'] !== $file['stat']['dev']
+                || $current['size'] !== $file['stat']['size'] || $current['mtime'] !== $file['stat']['mtime']) continue;
+            if (!unlink($path)) throw new RuntimeException('Suppression de la copie locale impossible');
+            echo 'Supprimé (rétention) : ' . $file['name'] . PHP_EOL;
+        }
+    }
+}
+
 function downloadLocalBackups(array $conf): void {
+    $maxAge = backupIntegerOption($conf, 'max_age_days', null, 1, 365000);
+    $retention = backupIntegerOption($conf, 'retention_days', null, 1, 365000);
+    $minimum = backupIntegerOption($conf, 'min_versions', 1, 0, 1000000);
+    $timezone = new \DateTimeZone($conf['backup_timezone'] ?? date_default_timezone_get());
     $directory = $conf['destination'];
     if (!is_dir($directory) && !mkdir($directory, 0700, true)) throw new RuntimeException('Destination inaccessible');
     $directory = realpath($directory);
     if ($directory === false || !is_writable($directory)) throw new RuntimeException('Destination inaccessible');
+    // Deux synchronisations du même dossier ne doivent pas purger en parallèle.
+    $lockPath = $directory . '/.website-backup.lock';
+    if (is_link($lockPath)) throw new RuntimeException('Lien symbolique interdit pour le verrou');
+    $mask = umask(0077);
+    try { $lock = fopen($lockPath, 'c'); }
+    finally { umask($mask); }
+    if ($lock === false) throw new RuntimeException('Verrou de synchronisation inaccessible');
+    try {
+        $stat = fstat($lock);
+        $current = lstat($lockPath);
+        if ($current === false || $stat === false || ($current['mode'] & 0170000) !== 0100000
+            || $current['ino'] !== $stat['ino'] || $current['dev'] !== $stat['dev']
+            || !flock($lock, LOCK_EX | LOCK_NB)) throw new RuntimeException('Synchronisation déjà en cours ou verrou invalide');
+        syncLocalBackups($conf, $directory, $maxAge, $timezone);
+        // Une erreur réseau, de métadonnées ou de taille interrompt le script AVANT toute purge.
+        if ($retention !== null) pruneLocalBackups($directory, $retention, $minimum, $timezone);
+    } finally {
+        fclose($lock);
+    }
+}
+
+function syncLocalBackups(array $conf, string $directory, ?int $maxAge, \DateTimeZone $timezone): void {
     $url = $conf['api_url'];
     if (str_contains($url, '?') || str_contains($url, '#')) throw new RuntimeException('api_url doit désigner api.php sans paramètres');
     $listFile = tempnam($directory, '.backup-list-');
     if ($listFile === false) throw new RuntimeException('Fichier temporaire indisponible');
     try {
-        downloadFileWithCurl($url . '?operation=list_local_backups', $listFile, [], $conf['api_key'], 'application/json');
+        $params = ['operation' => 'list_local_backups'];
+        if ($maxAge !== null) $params['max_age_days'] = $maxAge;
+        downloadFileWithCurl($url . '?' . http_build_query($params), $listFile, [], $conf['api_key'], 'application/json');
         $list = json_decode(file_get_contents($listFile), true, 512, JSON_THROW_ON_ERROR);
         if (($list['success'] ?? false) !== true || !is_array($list['backups'] ?? null)) {
             throw new RuntimeException('Liste des archives invalide');
@@ -81,9 +161,7 @@ function downloadLocalBackups(array $conf): void {
             $name = $backup['name'] ?? null;
             $id = $backup['id'] ?? null;
             $size = $backup['size'] ?? null;
-            if (!is_string($name) || !is_string($id) || $name === '' || str_contains($name, '/')
-                || str_contains($name, '\\') || preg_match('/[\x00-\x1f\x7f]/', $name)
-                || !preg_match('/\d{4}-\d{2}-\d{2}__\d{2}-\d{2}-\d{2}.*\.(tar|zip)$/D', $name)
+            if (!is_string($name) || !is_string($id) || backupNameMetadata($name, $timezone) === null
                 || !is_int($size) || $size < 0) throw new RuntimeException('Métadonnées d’archive invalides');
             $destination = $directory . DIRECTORY_SEPARATOR . $name;
             if (is_link($destination)) throw new RuntimeException('Lien symbolique interdit dans la destination');

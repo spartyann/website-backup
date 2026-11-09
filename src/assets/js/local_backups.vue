@@ -11,11 +11,11 @@
         <p v-else-if="!loading && !error && !filtered.length">Aucune archive ne correspond à la recherche.</p>
         <div v-if="filtered.length" class="table-responsive">
             <table class="table align-middle">
-                <thead><tr><th>Fichier</th><th>Date de modification</th><th>Taille</th><th>Téléchargement</th></tr></thead>
+                <thead><tr><th>Fichier</th><th>Date de sauvegarde</th><th>Taille</th><th>Téléchargement</th></tr></thead>
                 <tbody>
                     <tr v-for="backup in filtered" :key="backup.id">
                         <td class="text-break">{{ backup.name }}</td>
-                        <td>{{ new Date(backup.modified_at).toLocaleString('fr-FR') }}</td>
+                        <td>{{ new Date(backup.created_at).toLocaleString('fr-FR') }}</td>
                         <td>{{ readableSize(backup.size) }}</td>
                         <td><button class="btn btn-sm btn-primary" @click="download(backup)">Télécharger</button></td>
                     </tr>
